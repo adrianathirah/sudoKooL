@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini Sudoku</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #f3f5fb;
+      color: #20243a;
+      font-family: system-ui, sans-serif;
+    }
+
+    main {
+      width: min(100%, 440px);
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+    }
+
+    .instructions {
+      margin-top: 0;
+      color: #60677d;
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      width: 100%;
+      aspect-ratio: 1;
+      margin: 20px auto;
+      border: 3px solid #252b44;
+      background: white;
+    }
+
+    .cell {
+      display: grid;
+      place-items: center;
+      min-width: 0;
+      padding: 0;
+      border: 0;
+      border-right: 1px solid #b9bfd0;
+      border-bottom: 1px solid #b9bfd0;
+      background: white;
+      color: #3348a5;
+      font-size: clamp(16px, 5vw, 26px);
+      cursor: pointer;
+    }
+
+    .cell.box-right {
+      border-right: 3px solid #252b44;
+    }
+
+    .cell.box-bottom {
+      border-bottom: 3px solid #252b44;
+    }
+
+    .cell.given {
+      background: #eef0f6;
+      color: #20243a;
+      font-weight: 700;
+    }
+
+    .cell.selected {
+      background: #dce5ff;
+      outline: 2px solid #526de5;
+      outline-offset: -2px;
+    }
+
+    .cell.related {
+      background: #f2f5ff;
+    }
+
+    .cell.given.selected {
+      background: #dce5ff;
+    }
+
+    .cell:focus-visible,
+    .controls button:focus-visible {
+      outline: 3px solid #526de5;
+      outline-offset: 2px;
+      z-index: 1;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .controls button {
+      min-height: 42px;
+      border: 1px solid #ccd1df;
+      border-radius: 8px;
+      background: white;
+      color: #20243a;
+      font-size: 17px;
+      cursor: pointer;
+    }
+
+    .controls button:hover {
+      background: #e8edff;
+    }
+
+    #message {
+      min-height: 1.5em;
+      margin-top: 16px;
+      color: #4a5269;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Sudoku</h1>
+    <p class="instructions">
+      Fill each row, column, and 3×3 box with the numbers 1–9.
+    </p>
+
+    <div id="board" aria-label="Sudoku board"></div>
+
+    <div class="controls" aria-label="Number controls">
+      <button type="button" data-number="1">1</button>
+      <button type="button" data-number="2">2</button>
+      <button type="button" data-number="3">3</button>
+      <button type="button" data-number="4">4</button>
+      <button type="button" data-number="5">5</button>
+      <button type="button" data-number="6">6</button>
+      <button type="button" data-number="7">7</button>
+      <button type="button" data-number="8">8</button>
+      <button type="button" data-number="9">9</button>
+      <button type="button" id="erase">Erase</button>
+    </div>
+
+    <div class="controls" style="grid-template-columns: 1fr; margin-top: 8px;">
+      <button type="button" id="check">Check puzzle</button>
+    </div>
+
+    <p id="message" aria-live="polite">Select an empty cell to begin.</p>
+  </main>
+
+  <script>
+    // 0 means the cell is empty.
+    const startingPuzzle = [
+      [5, 3, 0, 0, 7, 0, 0, 0, 0],
+      [6, 0, 0, 1, 9, 5, 0, 0, 0],
+      [0, 9, 8, 0, 0, 0, 0, 6, 0],
+      [8, 0, 0, 0, 6, 0, 0, 0, 3],
+      [4, 0, 0, 8, 0, 3, 0, 0, 1],
+      [7, 0, 0, 0, 2, 0, 0, 0, 6],
+      [0, 6, 0, 0, 0, 0, 2, 8, 0],
+      [0, 0, 0, 4, 1, 9, 0, 0, 5],
+      [0, 0, 0, 0, 8, 0, 0, 7, 9]
+    ];
+
+    const board = startingPuzzle.map(row => [...row]);
+    const givenCells = startingPuzzle.map(row =>
+      row.map(number => number !== 0)
+    );
+
+    const boardElement = document.querySelector("#board");
+    const messageElement = document.querySelector("#message");
+    let selectedCell = null;
+
+    function renderBoard() {
+      boardElement.replaceChildren();
+
+      for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+          const cell = document.createElement("button");
+          cell.type = "button";
+          cell.className = "cell";
+          cell.textContent = board[row][col] || "";
+          cell.setAttribute(
+            "aria-label",
+            `Row ${row + 1}, column ${col + 1}, ${
+              board[row][col] || "empty"
+            }${givenCells[row][col] ? ", starting clue" : ""}`
+          );
+
+          if (givenCells[row][col]) cell.classList.add("given");
+          if (col === 2 || col === 5) cell.classList.add("box-right");
+          if (row === 2 || row === 5) cell.classList.add("box-bottom");
+
+          if (selectedCell) {
+            const sameRow = row === selectedCell.row;
+            const sameColumn = col === selectedCell.col;
+            const sameBox =
+              Math.floor(row / 3) === Math.floor(selectedCell.row / 3) &&
+              Math.floor(col / 3) === Math.floor(selectedCell.col / 3);
+
+            if (sameRow || sameColumn || sameBox) {
+              cell.classList.add("related");
+            }
+
+            if (row === selectedCell.row && col === selectedCell.col) {
+              cell.classList.add("selected");
+            }
+          }
+
+          cell.addEventListener("click", () => {
+            selectedCell = { row, col };
+            renderBoard();
+            messageElement.textContent = givenCells[row][col]
+              ? "That is a starting clue. Select an empty cell."
+              : "Enter a number from 1 to 9.";
+          });
+
+          boardElement.appendChild(cell);
+        }
+      }
+    }
+
+    function hasConflict(row, col, number) {
+      for (let i = 0; i < 9; i++) {
+        if (i !== col && board[row][i] === number) return true;
+        if (i !== row && board[i][col] === number) return true;
+      }
+
+      const boxStartRow = Math.floor(row / 3) * 3;
+      const boxStartCol = Math.floor(col / 3) * 3;
+
+      for (let r = boxStartRow; r < boxStartRow + 3; r++) {
+        for (let c = boxStartCol; c < boxStartCol + 3; c++) {
+          if ((r !== row || c !== col) && board[r][c] === number) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
+    function enterNumber(number) {
+      if (!selectedCell) {
+        messageElement.textContent = "Select an empty cell first.";
+        return;
+      }
+
+      const { row, col } = selectedCell;
+
+      if (givenCells[row][col]) {
+        messageElement.textContent = "You cannot change a starting clue.";
+        return;
+      }
+
+      if (number !== 0 && hasConflict(row, col, number)) {
+        messageElement.textContent =
+          `${number} is already in that row, column, or 3×3 box.`;
+        return;
+      }
+
+      board[row][col] = number;
+      renderBoard();
+      messageElement.textContent =
+        number === 0 ? "Cell erased." : `Entered ${number}.`;
+    }
+
+    document.querySelectorAll("[data-number]").forEach(button => {
+      button.addEventListener("click", () => {
+        enterNumber(Number(button.dataset.number));
+      });
+    });
+
+    document.querySelector("#erase").addEventListener("click", () => {
+      enterNumber(0);
+    });
+
+    document.querySelector("#check").addEventListener("click", () => {
+      if (board.some(row => row.includes(0))) {
+        messageElement.textContent = "Keep going—some cells are still empty.";
+        return;
+      }
+
+      messageElement.textContent = "Congratulations! You solved the Sudoku!";
+    });
+
+    document.addEventListener("keydown", event => {
+      if (/^[1-9]$/.test(event.key)) {
+        enterNumber(Number(event.key));
+      } else if (event.key === "Backspace" || event.key === "Delete") {
+        enterNumber(0);
+      }
+    });
+
+    renderBoard();
+  </script>
+</body>
+</html>
