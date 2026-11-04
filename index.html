@@ -41,7 +41,7 @@
     .modal li { margin: 10px 0; }
     .modal-actions { display: grid; gap: 8px; margin-top: 20px; }
     .modal-actions button.primary { background: #526de5; color: white; border-color: #526de5; }
-    .win-stats { text-align: center; color: #4a5269; }
+    #win-quote { text-align: center; }
     @media (max-width: 380px) { body { padding: 12px; } .controls button { font-size: 15px; } #status { gap: 10px; font-size: 14px; } }
   </style>
 </head>
@@ -88,10 +88,8 @@
   <div class="modal-backdrop" id="win-modal" role="dialog" aria-modal="true" aria-labelledby="win-title" hidden>
     <section class="modal">
       <h2 id="win-title">Puzzle complete!</h2>
-      <p id="win-rating" style="text-align:center;font-weight:700;font-size:1.2rem;"></p>
-      <p id="win-quote" style="text-align:center;"></p>
-      <p class="win-stats" id="win-stats"></p>
-      <div class="modal-actions"><button type="button" class="primary" id="close-win">Keep playing</button><button type="button" id="win-new-game">New Game</button></div>
+      <p id="win-quote"></p>
+      <div class="modal-actions"><button type="button" class="primary" id="continue-button">Continue</button></div>
     </section>
   </div>
 
@@ -271,24 +269,18 @@
     }
     function randomQuote(quotes) { return quotes[Math.floor(Math.random() * quotes.length)]; }
     function showWinPopup() {
-      let rating, quote;
-      if (mistakeCount === 0 && hintCount === 0) { rating = "Flawless"; quote = randomQuote(QUOTES.flawless); }
-      else if (mistakeCount === 0 && hintCount > 0) { rating = "Clean grid"; quote = randomQuote(QUOTES.clean); }
-      else if (mistakeCount >= 4) { rating = "Many mistakes"; quote = randomQuote(QUOTES.many); }
-      else if (hintCount === 0) { rating = "A few mistakes"; quote = randomQuote(QUOTES.few); }
-      else { rating = "Still KooL"; quote = randomQuote(QUOTES.assisted); }
-      const difficultyName = currentDifficulty[0].toUpperCase() + currentDifficulty.slice(1);
-      document.querySelector("#win-rating").textContent = `${rating} · ${currentMode === "core9" ? "Core 9" : "Regular"} · ${difficultyName}`;
-      document.querySelector("#win-quote").textContent = `“${quote}”`;
-      document.querySelector("#win-stats").textContent = `Rule mistakes: ${mistakeCount} · Hints used: ${hintCount}/3`;
-      gameWon = true; updateStatus(); winModal.hidden = false; document.querySelector("#close-win").focus();
+      let quote;
+      if (mistakeCount === 0 && hintCount === 0) quote = randomQuote(QUOTES.flawless);
+      else if (mistakeCount === 0 && hintCount > 0) quote = randomQuote(QUOTES.clean);
+      else if (mistakeCount >= 4) quote = randomQuote(QUOTES.many);
+      else if (hintCount === 0) quote = randomQuote(QUOTES.few);
+      else quote = randomQuote(QUOTES.assisted);
+      document.querySelector("#win-quote").textContent = quote;
+      gameWon = true; updateStatus(); winModal.hidden = false; document.querySelector("#continue-button").focus();
     }
     function checkPuzzle() {
       if (gameWon) return;
       if (board.some(row => row.includes(0))) { messageElement.textContent = "Keep going—some cells are still empty."; return; }
-
-      // A completed board wins when it obeys the rules; it need not match the
-      // particular solution used to generate the clues or provide hints.
       const hasRuleConflict = board.some((row, r) => row.some((value, c) => findConflicts(r, c, value).length > 0));
       if (hasRuleConflict) { messageElement.textContent = "Some numbers still conflict with the Sudoku rules (red cells). Correct them and check again."; return; }
       showWinPopup();
@@ -309,8 +301,7 @@
     core9ModeButton.addEventListener("click", () => { core9Modal.hidden = false; document.querySelector("#start-core9").focus(); });
     document.querySelector("#start-core9").addEventListener("click", () => { core9Modal.hidden = true; makeNewPuzzle("core9"); });
     document.querySelector("#cancel-core9").addEventListener("click", () => { core9Modal.hidden = true; regularModeButton.focus(); });
-    document.querySelector("#close-win").addEventListener("click", () => { winModal.hidden = true; messageElement.textContent = "Puzzle solved! Start a new game whenever you’re ready."; });
-    document.querySelector("#win-new-game").addEventListener("click", () => makeNewPuzzle());
+    document.querySelector("#continue-button").addEventListener("click", () => makeNewPuzzle(currentMode));
     document.addEventListener("keydown", event => {
       if (!core9Modal.hidden || !winModal.hidden) { if (event.key === "Escape") { core9Modal.hidden = true; winModal.hidden = true; } return; }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") { event.preventDefault(); undoMove(); }
