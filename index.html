@@ -14,12 +14,10 @@
     main { width: min(100%, 440px); text-align: center; }
     h1 { margin-bottom: 8px; }
     .instructions { margin-top: 0; color: #60677d; }
-    .settings { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 14px 0; }
-    .settings label { font-weight: 600; }
-    select {
-      min-height: 40px; padding: 6px 10px; border: 1px solid #ccd1df;
-      border-radius: 8px; background: white; color: #20243a; font: inherit;
-    }
+    .difficulty-picker { margin: 14px 0; }
+    .difficulty-picker strong { display: block; margin-bottom: 8px; }
+    #difficulty-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .difficulty-button.active { background: #dce5ff; border-color: #526de5; font-weight: 700; }
     #mode-controls { display: flex; justify-content: center; gap: 8px; margin: 12px 0; }
     #board {
       display: grid; grid-template-columns: repeat(9, 1fr); width: 100%; aspect-ratio: 1;
@@ -39,7 +37,7 @@
     .cell.given.selected { background: #dce5ff; }
     .cell.conflict { color: #b42318; background: #ffebe9; }
     .cell.core-center { box-shadow: inset 0 0 0 1px #a4afe0; }
-    .cell:focus-visible, button:focus-visible, select:focus-visible { outline: 3px solid #526de5; outline-offset: 2px; z-index: 1; }
+    .cell:focus-visible, button:focus-visible { outline: 3px solid #526de5; outline-offset: 2px; z-index: 1; }
     button {
       min-height: 42px; border: 1px solid #ccd1df; border-radius: 8px;
       background: white; color: #20243a; font-size: 16px; cursor: pointer; padding: 8px 12px;
@@ -78,14 +76,14 @@
     <h1>sudoKooL</h1>
     <p class="instructions" id="mode-instructions">Fill each row, column, and 3×3 box with the numbers 1–9.</p>
 
-    <div class="settings">
-      <label for="difficulty">Difficulty</label>
-      <select id="difficulty" aria-label="Choose difficulty">
-        <option value="easy">Easy</option>
-        <option value="medium">Medium</option>
-        <option value="hard">Hard</option>
-      </select>
-    </div>
+    <section class="difficulty-picker" aria-label="Choose puzzle difficulty">
+      <strong>Difficulty</strong>
+      <div id="difficulty-controls">
+        <button type="button" class="difficulty-button active" data-difficulty="easy" aria-pressed="true">Easy</button>
+        <button type="button" class="difficulty-button" data-difficulty="medium" aria-pressed="false">Medium</button>
+        <button type="button" class="difficulty-button" data-difficulty="hard" aria-pressed="false">Hard</button>
+      </div>
+    </section>
 
     <div id="mode-controls" aria-label="Game modes">
       <button type="button" class="mode-button active" id="regular-mode" aria-pressed="true">Regular Mode</button>
@@ -163,19 +161,10 @@
 
     const CLUES_BY_DIFFICULTY = { easy: 40, medium: 32, hard: 26 };
     const QUOTES = {
-      flawless: [
-        "Zero mistakes? Show-off. We love it.",
-        "Perfect score! Please leave some talent for the rest of us."
-      ],
+      flawless: ["Zero mistakes? Show-off. We love it.", "Perfect score! Please leave some talent for the rest of us."],
       clean: ["The hint helped, but I won’t tell anyone. Well played."],
-      few: [
-        "Not perfect, but neither is anyone. Still KooL ~",
-        "Mistakes were made. So was the grid. Well done!"
-      ],
-      many: [
-        "You got there in the end. That’s what counts!",
-        "That was… a journey. But hey, the grid is full. Nice one!"
-      ],
+      few: ["Not perfect, but neither is anyone. Still KooL ~", "Mistakes were made. So was the grid. Well done!"],
+      many: ["You got there in the end. That’s what counts!", "That was… a journey. But hey, the grid is full. Nice one!"],
       assisted: ["A little help, a few detours, and a well-earned win!", "You kept at it and got there. Nice solving!"]
     };
 
@@ -184,6 +173,7 @@
     let givenCells;
     let selectedCell = null;
     let currentMode = "regular";
+    let currentDifficulty = "easy";
     let mistakeCount = 0;
     let hintCount = 0;
     let gameWon = false;
@@ -197,7 +187,6 @@
     const winModal = document.querySelector("#win-modal");
     const regularModeButton = document.querySelector("#regular-mode");
     const core9ModeButton = document.querySelector("#core9-mode");
-    const difficultySelect = document.querySelector("#difficulty");
 
     function shuffled(items) {
       const result = [...items];
@@ -239,7 +228,6 @@
 
     function createPuzzle(mode, difficulty) {
       let candidate;
-      // Core 9 needs a solution whose nine center values are all distinct.
       do {
         candidate = makeSolution();
       } while (mode === "core9" && new Set(getCoreCenters(candidate).map(cell => cell.value)).size !== 9);
@@ -266,6 +254,14 @@
         : "Fill each row, column, and 3×3 box with the numbers 1–9.";
     }
 
+    function updateDifficultyButtons() {
+      document.querySelectorAll("[data-difficulty]").forEach(button => {
+        const active = button.dataset.difficulty === currentDifficulty;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+    }
+
     function updateStatus() {
       document.querySelector("#mistakes").textContent = `Mistakes: ${mistakeCount}`;
       document.querySelector("#hints").textContent = `Hints: ${hintCount}/3`;
@@ -276,8 +272,7 @@
 
     function makeNewPuzzle(mode = currentMode) {
       currentMode = mode;
-      const difficulty = difficultySelect.value;
-      const generated = createPuzzle(mode, difficulty);
+      const generated = createPuzzle(mode, currentDifficulty);
       board = generated.puzzle.map(row => [...row]);
       solution = generated.solution;
       givenCells = board.map(row => row.map(number => number !== 0));
@@ -288,14 +283,14 @@
       moveHistory.length = 0;
       winModal.hidden = true;
       updateModeDisplay();
+      updateDifficultyButtons();
       updateStatus();
       renderBoard();
-      messageElement.textContent = `${difficulty[0].toUpperCase()}${difficulty.slice(1)} ${mode === "core9" ? "Core 9" : "regular"} puzzle ready. Good luck!`;
+      const label = currentDifficulty[0].toUpperCase() + currentDifficulty.slice(1);
+      messageElement.textContent = `${label} ${mode === "core9" ? "Core 9" : "regular"} puzzle ready. Good luck!`;
     }
 
-    function isCoreCenter(row, col) {
-      return row % 3 === 1 && col % 3 === 1;
-    }
+    function isCoreCenter(row, col) { return row % 3 === 1 && col % 3 === 1; }
 
     function findConflicts(row, col, number) {
       const conflicts = new Set();
@@ -352,10 +347,10 @@
       }
     }
 
-    function setCellValue(row, col, value, isHint = false) {
+    function setCellValue(row, col, value) {
       const previousValue = board[row][col];
       if (previousValue === value) return false;
-      moveHistory.push({ row, col, previousValue, isHint });
+      moveHistory.push({ row, col, previousValue });
       board[row][col] = value;
       return true;
     }
@@ -375,7 +370,10 @@
       if (number !== 0 && findConflicts(row, col, number).length) mistakeCount++;
       updateStatus();
       renderBoard();
-      messageElement.textContent = number === 0 ? "Cell erased." : (findConflicts(row, col, number).length ? `${number} conflicts with a Sudoku rule and is marked red. You can keep solving.` : `Entered ${number}.`);
+      const conflicts = number === 0 ? [] : findConflicts(row, col, number);
+      messageElement.textContent = number === 0 ? "Cell erased." : conflicts.length
+        ? `${number} conflicts with a Sudoku rule and is marked red. You can keep solving.`
+        : `Entered ${number}.`;
     }
 
     function useHint() {
@@ -389,13 +387,12 @@
         messageElement.textContent = "Choose an empty cell for your hint.";
         return;
       }
-      setCellValue(row, col, solution[row][col], true);
+      setCellValue(row, col, solution[row][col]);
       hintCount++;
       updateStatus();
       renderBoard();
-      const conflicts = findConflicts(row, col, board[row][col]);
-      messageElement.textContent = conflicts.length
-        ? `Hint entered. It is correct, but another entry currently conflicts with it.`
+      messageElement.textContent = findConflicts(row, col, board[row][col]).length
+        ? "Hint entered. It is correct, but another entry currently conflicts with it."
         : "Hint entered. Keep going!";
     }
 
@@ -410,9 +407,7 @@
       messageElement.textContent = "Last move undone. Mistakes and hints used are not refunded.";
     }
 
-    function randomQuote(quotes) {
-      return quotes[Math.floor(Math.random() * quotes.length)];
-    }
+    function randomQuote(quotes) { return quotes[Math.floor(Math.random() * quotes.length)]; }
 
     function showWinPopup() {
       let rating;
@@ -433,7 +428,8 @@
         rating = "Still KooL";
         quote = randomQuote(QUOTES.assisted);
       }
-      document.querySelector("#win-rating").textContent = `${rating} · ${currentMode === "core9" ? "Core 9" : "Regular"} · ${difficultySelect.value[0].toUpperCase()}${difficultySelect.value.slice(1)}`;
+      const difficultyName = currentDifficulty[0].toUpperCase() + currentDifficulty.slice(1);
+      document.querySelector("#win-rating").textContent = `${rating} · ${currentMode === "core9" ? "Core 9" : "Regular"} · ${difficultyName}`;
       document.querySelector("#win-quote").textContent = `“${quote}”`;
       document.querySelector("#win-stats").textContent = `Rule mistakes: ${mistakeCount} · Hints used: ${hintCount}/3`;
       gameWon = true;
@@ -465,6 +461,15 @@
     document.querySelector("#undo").addEventListener("click", undoMove);
     document.querySelector("#check").addEventListener("click", checkPuzzle);
     document.querySelector("#new-game").addEventListener("click", () => makeNewPuzzle());
+
+    document.querySelectorAll("[data-difficulty]").forEach(button => {
+      button.addEventListener("click", () => {
+        const chosenDifficulty = button.dataset.difficulty;
+        if (chosenDifficulty === currentDifficulty) return;
+        currentDifficulty = chosenDifficulty;
+        makeNewPuzzle(currentMode);
+      });
+    });
 
     regularModeButton.addEventListener("click", () => makeNewPuzzle("regular"));
     core9ModeButton.addEventListener("click", () => {
