@@ -31,7 +31,7 @@
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     .controls { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
     .controls button { min-width: 0; padding: 6px; font-size: 17px; }
-    .action-controls { grid-template-columns: repeat(4, 1fr); margin-top: 8px; }
+    .action-controls { grid-template-columns: repeat(3, 1fr); margin-top: 8px; }
     #status { display: flex; justify-content: center; gap: 18px; margin: 10px 0 0; color: #4a5269; }
     #message { min-height: 1.5em; margin-top: 12px; color: #4a5269; }
     .modal-backdrop { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; padding: 20px; background: rgb(25 31 52 / 55%); }
@@ -70,7 +70,7 @@
       <button type="button" data-number="6">6</button><button type="button" data-number="7">7</button><button type="button" data-number="8">8</button><button type="button" data-number="9">9</button><button type="button" id="erase">Erase</button>
     </div>
     <div class="controls action-controls">
-      <button type="button" id="new-game">New Game</button><button type="button" id="undo" disabled>Undo</button><button type="button" id="hint">Hint (3)</button><button type="button" id="check">Check</button>
+      <button type="button" id="new-game">New Game</button><button type="button" id="undo" disabled>Undo</button><button type="button" id="hint">Hint (3)</button>
     </div>
     <p id="status"><span id="mistakes">Mistakes: 0</span><span id="hints">Hints: 0/3</span></p>
     <p id="message" aria-live="polite">Select an empty cell to begin.</p>
@@ -89,7 +89,7 @@
     <section class="modal">
       <h2 id="win-title">Puzzle complete!</h2>
       <p id="win-quote"></p>
-      <div class="modal-actions"><button type="button" class="primary" id="continue-button">Continue</button></div>
+      <div class="modal-actions"><button type="button" class="primary" id="win-new-game">New Game</button></div>
     </section>
   </div>
 
@@ -250,6 +250,7 @@
       const conflicts = number === 0 ? [] : findConflicts(row, col, number);
       messageElement.textContent = number === 0 ? "Cell erased." : conflicts.length
         ? `${number} conflicts with a Sudoku rule and is marked red. You can keep solving.` : `Entered ${number}.`;
+      checkForAutomaticWin();
     }
     function useHint() {
       if (gameWon || hintCount >= 3) return;
@@ -259,6 +260,7 @@
       setCellValue(row, col, solution[row][col]); hintCount++; updateStatus(); renderBoard();
       messageElement.textContent = findConflicts(row, col, board[row][col]).length
         ? "Hint entered. It is correct, but another entry currently conflicts with it." : "Hint entered. Keep going!";
+      checkForAutomaticWin();
     }
     function undoMove() {
       if (gameWon) return;
@@ -276,13 +278,15 @@
       else if (hintCount === 0) quote = randomQuote(QUOTES.few);
       else quote = randomQuote(QUOTES.assisted);
       document.querySelector("#win-quote").textContent = quote;
-      gameWon = true; updateStatus(); winModal.hidden = false; document.querySelector("#continue-button").focus();
+      gameWon = true; updateStatus(); winModal.hidden = false; document.querySelector("#win-new-game").focus();
     }
-    function checkPuzzle() {
-      if (gameWon) return;
-      if (board.some(row => row.includes(0))) { messageElement.textContent = "Keep going—some cells are still empty."; return; }
+    function checkForAutomaticWin() {
+      if (gameWon || board.some(row => row.includes(0))) return;
       const hasRuleConflict = board.some((row, r) => row.some((value, c) => findConflicts(r, c, value).length > 0));
-      if (hasRuleConflict) { messageElement.textContent = "Some numbers still conflict with the Sudoku rules (red cells). Correct them and check again."; return; }
+      if (hasRuleConflict) {
+        messageElement.textContent = "Some numbers still conflict with the Sudoku rules (red cells). Correct them to complete the puzzle.";
+        return;
+      }
       showWinPopup();
     }
 
@@ -290,7 +294,6 @@
     document.querySelector("#erase").addEventListener("click", () => enterNumber(0));
     document.querySelector("#hint").addEventListener("click", useHint);
     document.querySelector("#undo").addEventListener("click", undoMove);
-    document.querySelector("#check").addEventListener("click", checkPuzzle);
     document.querySelector("#new-game").addEventListener("click", () => makeNewPuzzle());
     document.querySelectorAll("[data-difficulty]").forEach(button => button.addEventListener("click", () => {
       const chosenDifficulty = button.dataset.difficulty;
@@ -301,7 +304,7 @@
     core9ModeButton.addEventListener("click", () => { core9Modal.hidden = false; document.querySelector("#start-core9").focus(); });
     document.querySelector("#start-core9").addEventListener("click", () => { core9Modal.hidden = true; makeNewPuzzle("core9"); });
     document.querySelector("#cancel-core9").addEventListener("click", () => { core9Modal.hidden = true; regularModeButton.focus(); });
-    document.querySelector("#continue-button").addEventListener("click", () => makeNewPuzzle(currentMode));
+    document.querySelector("#win-new-game").addEventListener("click", () => makeNewPuzzle(currentMode));
     document.addEventListener("keydown", event => {
       if (!core9Modal.hidden || !winModal.hidden) { if (event.key === "Escape") { core9Modal.hidden = true; winModal.hidden = true; } return; }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") { event.preventDefault(); undoMove(); }
