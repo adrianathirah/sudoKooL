@@ -3,11 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mini Sudoku</title>
+  <title>sudoKooL</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -20,19 +18,9 @@
       font-family: system-ui, sans-serif;
     }
 
-    main {
-      width: min(100%, 440px);
-      text-align: center;
-    }
-
-    h1 {
-      margin-bottom: 8px;
-    }
-
-    .instructions {
-      margin-top: 0;
-      color: #60677d;
-    }
+    main { width: min(100%, 440px); text-align: center; }
+    h1 { margin-bottom: 8px; }
+    .instructions { margin-top: 0; color: #60677d; }
 
     #board {
       display: grid;
@@ -58,47 +46,21 @@
       cursor: pointer;
     }
 
-    .cell.box-right {
-      border-right: 3px solid #252b44;
-    }
+    .cell.box-right { border-right: 3px solid #252b44; }
+    .cell.box-bottom { border-bottom: 3px solid #252b44; }
+    .cell.given { background: #eef0f6; color: #20243a; font-weight: 700; }
+    .cell.selected { background: #dce5ff; outline: 2px solid #526de5; outline-offset: -2px; }
+    .cell.related { background: #f2f5ff; }
+    .cell.given.selected { background: #dce5ff; }
+    .cell.conflict { color: #b42318; background: #ffebe9; }
 
-    .cell.box-bottom {
-      border-bottom: 3px solid #252b44;
-    }
-
-    .cell.given {
-      background: #eef0f6;
-      color: #20243a;
-      font-weight: 700;
-    }
-
-    .cell.selected {
-      background: #dce5ff;
-      outline: 2px solid #526de5;
-      outline-offset: -2px;
-    }
-
-    .cell.related {
-      background: #f2f5ff;
-    }
-
-    .cell.given.selected {
-      background: #dce5ff;
-    }
-
-    .cell:focus-visible,
-    .controls button:focus-visible {
+    .cell:focus-visible, .controls button:focus-visible {
       outline: 3px solid #526de5;
       outline-offset: 2px;
       z-index: 1;
     }
 
-    .controls {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 8px;
-    }
-
+    .controls { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
     .controls button {
       min-height: 42px;
       border: 1px solid #ccd1df;
@@ -108,24 +70,14 @@
       font-size: 17px;
       cursor: pointer;
     }
-
-    .controls button:hover {
-      background: #e8edff;
-    }
-
-    #message {
-      min-height: 1.5em;
-      margin-top: 16px;
-      color: #4a5269;
-    }
+    .controls button:hover { background: #e8edff; }
+    #message { min-height: 1.5em; margin-top: 16px; color: #4a5269; }
   </style>
 </head>
 <body>
   <main>
-    <h1>Sudoku</h1>
-    <p class="instructions">
-      Fill each row, column, and 3×3 box with the numbers 1–9.
-    </p>
+    <h1>sudoKooL</h1>
+    <p class="instructions">Fill each row, column, and 3×3 box with the numbers 1–9.</p>
 
     <div id="board" aria-label="Sudoku board"></div>
 
@@ -142,7 +94,8 @@
       <button type="button" id="erase">Erase</button>
     </div>
 
-    <div class="controls" style="grid-template-columns: 1fr; margin-top: 8px;">
+    <div class="controls" style="grid-template-columns: repeat(2, 1fr); margin-top: 8px;">
+      <button type="button" id="new-game">New Game</button>
       <button type="button" id="check">Check puzzle</button>
     </div>
 
@@ -150,8 +103,9 @@
   </main>
 
   <script>
-    // 0 means the cell is empty.
-    const startingPuzzle = [
+    // This completed puzzle has a unique solution. Random row, column, and
+    // number permutations create a different valid puzzle each time.
+    const basePuzzle = [
       [5, 3, 0, 0, 7, 0, 0, 0, 0],
       [6, 0, 0, 1, 9, 5, 0, 0, 0],
       [0, 9, 8, 0, 0, 0, 0, 6, 0],
@@ -163,14 +117,86 @@
       [0, 0, 0, 0, 8, 0, 0, 7, 9]
     ];
 
-    const board = startingPuzzle.map(row => [...row]);
-    const givenCells = startingPuzzle.map(row =>
-      row.map(number => number !== 0)
-    );
+    const baseSolution = [
+      [5, 3, 4, 6, 7, 8, 9, 1, 2],
+      [6, 7, 2, 1, 9, 5, 3, 4, 8],
+      [1, 9, 8, 3, 4, 2, 5, 6, 7],
+      [8, 5, 9, 7, 6, 1, 4, 2, 3],
+      [4, 2, 6, 8, 5, 3, 7, 9, 1],
+      [7, 1, 3, 9, 2, 4, 8, 5, 6],
+      [9, 6, 1, 5, 3, 7, 2, 8, 4],
+      [2, 8, 7, 4, 1, 9, 6, 3, 5],
+      [3, 4, 5, 2, 8, 6, 1, 7, 9]
+    ];
+
+    let board;
+    let solution;
+    let givenCells;
+    let selectedCell = null;
 
     const boardElement = document.querySelector("#board");
     const messageElement = document.querySelector("#message");
-    let selectedCell = null;
+
+    function shuffled(items) {
+      const result = [...items];
+      for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    }
+
+    function shuffledRowOrColumnOrder() {
+      return shuffled([0, 1, 2]).flatMap(group =>
+        shuffled([0, 1, 2]).map(offset => group * 3 + offset)
+      );
+    }
+
+    function makeNewPuzzle() {
+      const rowOrder = shuffledRowOrColumnOrder();
+      const colOrder = shuffledRowOrColumnOrder();
+      const digits = shuffled([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      const digitMap = new Map(digits.map((digit, index) => [index + 1, digit]));
+      const transpose = Math.random() < 0.5;
+
+      const transform = source => Array.from({ length: 9 }, (_, row) =>
+        Array.from({ length: 9 }, (_, col) => {
+          const sourceRow = transpose ? colOrder[col] : rowOrder[row];
+          const sourceCol = transpose ? rowOrder[row] : colOrder[col];
+          const value = source[sourceRow][sourceCol];
+          return value === 0 ? 0 : digitMap.get(value);
+        })
+      );
+
+      const puzzle = transform(basePuzzle);
+      solution = transform(baseSolution);
+      board = puzzle.map(row => [...row]);
+      givenCells = puzzle.map(row => row.map(number => number !== 0));
+      selectedCell = null;
+      renderBoard();
+      messageElement.textContent = "New puzzle ready. Good luck!";
+    }
+
+    // Return the exact kinds of duplicate found, ignoring the cell being edited.
+    function findConflicts(row, col, number) {
+      const conflicts = new Set();
+
+      for (let i = 0; i < 9; i++) {
+        if (i !== col && board[row][i] === number) conflicts.add("row");
+        if (i !== row && board[i][col] === number) conflicts.add("column");
+      }
+
+      const boxStartRow = Math.floor(row / 3) * 3;
+      const boxStartCol = Math.floor(col / 3) * 3;
+      for (let r = boxStartRow; r < boxStartRow + 3; r++) {
+        for (let c = boxStartCol; c < boxStartCol + 3; c++) {
+          if ((r !== row || c !== col) && board[r][c] === number) {
+            conflicts.add("3×3 box");
+          }
+        }
+      }
+      return [...conflicts];
+    }
 
     function renderBoard() {
       boardElement.replaceChildren();
@@ -181,31 +207,23 @@
           cell.type = "button";
           cell.className = "cell";
           cell.textContent = board[row][col] || "";
-          cell.setAttribute(
-            "aria-label",
-            `Row ${row + 1}, column ${col + 1}, ${
-              board[row][col] || "empty"
-            }${givenCells[row][col] ? ", starting clue" : ""}`
-          );
+          cell.setAttribute("aria-label", `Row ${row + 1}, column ${col + 1}, ${board[row][col] || "empty"}${givenCells[row][col] ? ", starting clue" : ""}`);
 
           if (givenCells[row][col]) cell.classList.add("given");
           if (col === 2 || col === 5) cell.classList.add("box-right");
           if (row === 2 || row === 5) cell.classList.add("box-bottom");
 
+          if (board[row][col] !== 0 && findConflicts(row, col, board[row][col]).length) {
+            cell.classList.add("conflict");
+          }
+
           if (selectedCell) {
             const sameRow = row === selectedCell.row;
             const sameColumn = col === selectedCell.col;
-            const sameBox =
-              Math.floor(row / 3) === Math.floor(selectedCell.row / 3) &&
+            const sameBox = Math.floor(row / 3) === Math.floor(selectedCell.row / 3) &&
               Math.floor(col / 3) === Math.floor(selectedCell.col / 3);
-
-            if (sameRow || sameColumn || sameBox) {
-              cell.classList.add("related");
-            }
-
-            if (row === selectedCell.row && col === selectedCell.col) {
-              cell.classList.add("selected");
-            }
+            if (sameRow || sameColumn || sameBox) cell.classList.add("related");
+            if (sameRow && sameColumn) cell.classList.add("selected");
           }
 
           cell.addEventListener("click", () => {
@@ -215,30 +233,9 @@
               ? "That is a starting clue. Select an empty cell."
               : "Enter a number from 1 to 9.";
           });
-
           boardElement.appendChild(cell);
         }
       }
-    }
-
-    function hasConflict(row, col, number) {
-      for (let i = 0; i < 9; i++) {
-        if (i !== col && board[row][i] === number) return true;
-        if (i !== row && board[i][col] === number) return true;
-      }
-
-      const boxStartRow = Math.floor(row / 3) * 3;
-      const boxStartCol = Math.floor(col / 3) * 3;
-
-      for (let r = boxStartRow; r < boxStartRow + 3; r++) {
-        for (let c = boxStartCol; c < boxStartCol + 3; c++) {
-          if ((r !== row || c !== col) && board[r][c] === number) {
-            return true;
-          }
-        }
-      }
-
-      return false;
     }
 
     function enterNumber(number) {
@@ -248,33 +245,31 @@
       }
 
       const { row, col } = selectedCell;
-
       if (givenCells[row][col]) {
         messageElement.textContent = "You cannot change a starting clue.";
         return;
       }
 
-      if (number !== 0 && hasConflict(row, col, number)) {
-        messageElement.textContent =
-          `${number} is already in that row, column, or 3×3 box.`;
+      const conflicts = number === 0 ? [] : findConflicts(row, col, number);
+      if (conflicts.length) {
+        const places = conflicts.length === 1
+          ? conflicts[0]
+          : `${conflicts.slice(0, -1).join(", ")} and ${conflicts.at(-1)}`;
+        messageElement.textContent = `${number} is already in the same ${places}.`;
         return;
       }
 
       board[row][col] = number;
       renderBoard();
-      messageElement.textContent =
-        number === 0 ? "Cell erased." : `Entered ${number}.`;
+      messageElement.textContent = number === 0 ? "Cell erased." : `Entered ${number}.`;
     }
 
     document.querySelectorAll("[data-number]").forEach(button => {
-      button.addEventListener("click", () => {
-        enterNumber(Number(button.dataset.number));
-      });
+      button.addEventListener("click", () => enterNumber(Number(button.dataset.number)));
     });
 
-    document.querySelector("#erase").addEventListener("click", () => {
-      enterNumber(0);
-    });
+    document.querySelector("#erase").addEventListener("click", () => enterNumber(0));
+    document.querySelector("#new-game").addEventListener("click", makeNewPuzzle);
 
     document.querySelector("#check").addEventListener("click", () => {
       if (board.some(row => row.includes(0))) {
@@ -282,18 +277,20 @@
         return;
       }
 
+      if (board.some((row, r) => row.some((value, c) => value !== solution[r][c]))) {
+        messageElement.textContent = "Not quite right yet. Check your entries and try again.";
+        return;
+      }
+
       messageElement.textContent = "Congratulations! You solved the Sudoku!";
     });
 
     document.addEventListener("keydown", event => {
-      if (/^[1-9]$/.test(event.key)) {
-        enterNumber(Number(event.key));
-      } else if (event.key === "Backspace" || event.key === "Delete") {
-        enterNumber(0);
-      }
+      if (/^[1-9]$/.test(event.key)) enterNumber(Number(event.key));
+      else if (event.key === "Backspace" || event.key === "Delete") enterNumber(0);
     });
 
-    renderBoard();
+    makeNewPuzzle();
   </script>
 </body>
 </html>
