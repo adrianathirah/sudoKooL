@@ -6,53 +6,31 @@
   <title>sudoKooL</title>
   <style>
     * { box-sizing: border-box; }
-
     body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 24px;
-      background: #f3f5fb;
-      color: #20243a;
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      padding: 24px; background: #f3f5fb; color: #20243a;
       font-family: system-ui, sans-serif;
     }
-
     main { width: min(100%, 440px); text-align: center; }
     h1 { margin-bottom: 8px; }
     .instructions { margin-top: 0; color: #60677d; }
-
-    #mode-controls {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin: 16px 0;
+    .settings { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 14px 0; }
+    .settings label { font-weight: 600; }
+    select {
+      min-height: 40px; padding: 6px 10px; border: 1px solid #ccd1df;
+      border-radius: 8px; background: white; color: #20243a; font: inherit;
     }
-
+    #mode-controls { display: flex; justify-content: center; gap: 8px; margin: 12px 0; }
     #board {
-      display: grid;
-      grid-template-columns: repeat(9, 1fr);
-      width: 100%;
-      aspect-ratio: 1;
-      margin: 20px auto;
-      border: 3px solid #252b44;
-      background: white;
+      display: grid; grid-template-columns: repeat(9, 1fr); width: 100%; aspect-ratio: 1;
+      margin: 20px auto; border: 3px solid #252b44; background: white;
     }
-
     .cell {
-      display: grid;
-      place-items: center;
-      min-width: 0;
-      padding: 0;
-      border: 0;
-      border-right: 1px solid #b9bfd0;
-      border-bottom: 1px solid #b9bfd0;
-      background: white;
-      color: #3348a5;
-      font-size: clamp(16px, 5vw, 26px);
-      cursor: pointer;
+      display: grid; place-items: center; min-width: 0; padding: 0; border: 0;
+      border-right: 1px solid #b9bfd0; border-bottom: 1px solid #b9bfd0;
+      border-radius: 0; background: white; color: #3348a5;
+      font-size: clamp(16px, 5vw, 26px); cursor: pointer;
     }
-
     .cell.box-right { border-right: 3px solid #252b44; }
     .cell.box-bottom { border-bottom: 3px solid #252b44; }
     .cell.given { background: #eef0f6; color: #20243a; font-weight: 700; }
@@ -61,58 +39,37 @@
     .cell.given.selected { background: #dce5ff; }
     .cell.conflict { color: #b42318; background: #ffebe9; }
     .cell.core-center { box-shadow: inset 0 0 0 1px #a4afe0; }
-
-    .cell:focus-visible, button:focus-visible {
-      outline: 3px solid #526de5;
-      outline-offset: 2px;
-      z-index: 1;
-    }
-
+    .cell:focus-visible, button:focus-visible, select:focus-visible { outline: 3px solid #526de5; outline-offset: 2px; z-index: 1; }
     button {
-      min-height: 42px;
-      border: 1px solid #ccd1df;
-      border-radius: 8px;
-      background: white;
-      color: #20243a;
-      font-size: 16px;
-      cursor: pointer;
-      padding: 8px 12px;
+      min-height: 42px; border: 1px solid #ccd1df; border-radius: 8px;
+      background: white; color: #20243a; font-size: 16px; cursor: pointer; padding: 8px 12px;
     }
     button:hover:not(:disabled) { background: #e8edff; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     .mode-button.active { background: #dce5ff; border-color: #526de5; font-weight: 700; }
-
     .controls { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
     .controls button { min-width: 0; padding: 6px; font-size: 17px; }
-    .action-controls { grid-template-columns: repeat(3, 1fr); margin-top: 8px; }
-    #message { min-height: 1.5em; margin-top: 16px; color: #4a5269; }
-
+    .action-controls { grid-template-columns: repeat(4, 1fr); margin-top: 8px; }
+    #status { display: flex; justify-content: center; gap: 18px; margin: 10px 0 0; color: #4a5269; }
+    #message { min-height: 1.5em; margin-top: 12px; color: #4a5269; }
     .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      z-index: 5;
-      display: grid;
-      place-items: center;
-      padding: 20px;
-      background: rgb(25 31 52 / 55%);
+      position: fixed; inset: 0; z-index: 5; display: grid; place-items: center;
+      padding: 20px; background: rgb(25 31 52 / 55%);
     }
     .modal-backdrop[hidden] { display: none; }
     .modal {
-      width: min(100%, 420px);
-      padding: 24px;
-      border-radius: 16px;
-      background: white;
-      box-shadow: 0 16px 48px rgb(0 0 0 / 22%);
-      text-align: left;
+      width: min(100%, 420px); padding: 24px; border-radius: 16px; background: white;
+      box-shadow: 0 16px 48px rgb(0 0 0 / 22%); text-align: left;
     }
     .modal h2 { margin-top: 0; text-align: center; }
     .modal li { margin: 10px 0; }
     .modal-actions { display: grid; gap: 8px; margin-top: 20px; }
-    .modal-actions button:first-child { background: #526de5; color: white; border-color: #526de5; }
-
+    .modal-actions button.primary { background: #526de5; color: white; border-color: #526de5; }
+    .win-stats { text-align: center; color: #4a5269; }
     @media (max-width: 380px) {
       body { padding: 12px; }
       .controls button { font-size: 15px; }
+      #status { gap: 10px; font-size: 14px; }
     }
   </style>
 </head>
@@ -121,9 +78,18 @@
     <h1>sudoKooL</h1>
     <p class="instructions" id="mode-instructions">Fill each row, column, and 3×3 box with the numbers 1–9.</p>
 
+    <div class="settings">
+      <label for="difficulty">Difficulty</label>
+      <select id="difficulty" aria-label="Choose difficulty">
+        <option value="easy">Easy</option>
+        <option value="medium">Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+    </div>
+
     <div id="mode-controls" aria-label="Game modes">
-      <button type="button" class="mode-button active" id="regular-mode">Regular Mode</button>
-      <button type="button" class="mode-button" id="core9-mode">Core 9</button>
+      <button type="button" class="mode-button active" id="regular-mode" aria-pressed="true">Regular Mode</button>
+      <button type="button" class="mode-button" id="core9-mode" aria-pressed="false">Core 9</button>
     </div>
 
     <div id="board" aria-label="Sudoku board"></div>
@@ -144,9 +110,11 @@
     <div class="controls action-controls">
       <button type="button" id="new-game">New Game</button>
       <button type="button" id="undo" disabled>Undo</button>
-      <button type="button" id="check">Check puzzle</button>
+      <button type="button" id="hint">Hint (3)</button>
+      <button type="button" id="check">Check</button>
     </div>
 
+    <p id="status"><span id="mistakes">Mistakes: 0</span><span id="hints">Hints: 0/3</span></p>
     <p id="message" aria-live="polite">Select an empty cell to begin.</p>
   </main>
 
@@ -157,29 +125,30 @@
       <ul>
         <li>The center cell of each 3×3 box makes nine center cells total.</li>
         <li>All nine center cells must contain different numbers (1–9).</li>
-        <li>Conflicting numbers stay on the board and are marked red. You can fix them whenever you like.</li>
+        <li>Choose Easy, Medium, or Hard before starting. The selected difficulty is shown above.</li>
+        <li>Hints are limited to three. Rule conflicts stay on the board and are marked red.</li>
       </ul>
       <div class="modal-actions">
-        <button type="button" id="start-core9">Start Core 9</button>
+        <button type="button" class="primary" id="start-core9">Start Core 9</button>
         <button type="button" id="cancel-core9">Back to Regular Mode</button>
       </div>
     </section>
   </div>
 
-  <script>
-    // Each generated board is a valid transformation of this puzzle and solution.
-    const basePuzzle = [
-      [5, 3, 0, 0, 7, 0, 0, 0, 0],
-      [6, 0, 0, 1, 9, 5, 0, 0, 0],
-      [0, 9, 8, 0, 0, 0, 0, 6, 0],
-      [8, 0, 0, 0, 6, 0, 0, 0, 3],
-      [4, 0, 0, 8, 0, 3, 0, 0, 1],
-      [7, 0, 0, 0, 2, 0, 0, 0, 6],
-      [0, 6, 0, 0, 0, 0, 2, 8, 0],
-      [0, 0, 0, 4, 1, 9, 0, 0, 5],
-      [0, 0, 0, 0, 8, 0, 0, 7, 9]
-    ];
+  <div class="modal-backdrop" id="win-modal" role="dialog" aria-modal="true" aria-labelledby="win-title" hidden>
+    <section class="modal">
+      <h2 id="win-title">Puzzle complete!</h2>
+      <p id="win-rating" style="text-align:center;font-weight:700;font-size:1.2rem;"></p>
+      <p id="win-quote" style="text-align:center;"></p>
+      <p class="win-stats" id="win-stats"></p>
+      <div class="modal-actions">
+        <button type="button" class="primary" id="close-win">Keep playing</button>
+        <button type="button" id="win-new-game">New Game</button>
+      </div>
+    </section>
+  </div>
 
+  <script>
     const baseSolution = [
       [5, 3, 4, 6, 7, 8, 9, 1, 2],
       [6, 7, 2, 1, 9, 5, 3, 4, 8],
@@ -192,19 +161,43 @@
       [3, 4, 5, 2, 8, 6, 1, 7, 9]
     ];
 
+    const CLUES_BY_DIFFICULTY = { easy: 40, medium: 32, hard: 26 };
+    const QUOTES = {
+      flawless: [
+        "Zero mistakes? Show-off. We love it.",
+        "Perfect score! Please leave some talent for the rest of us."
+      ],
+      clean: ["The hint helped, but I won’t tell anyone. Well played."],
+      few: [
+        "Not perfect, but neither is anyone. Still KooL ~",
+        "Mistakes were made. So was the grid. Well done!"
+      ],
+      many: [
+        "You got there in the end. That’s what counts!",
+        "That was… a journey. But hey, the grid is full. Nice one!"
+      ],
+      assisted: ["A little help, a few detours, and a well-earned win!", "You kept at it and got there. Nice solving!"]
+    };
+
     let board;
     let solution;
     let givenCells;
     let selectedCell = null;
     let currentMode = "regular";
+    let mistakeCount = 0;
+    let hintCount = 0;
+    let gameWon = false;
     const moveHistory = [];
 
     const boardElement = document.querySelector("#board");
     const messageElement = document.querySelector("#message");
     const undoButton = document.querySelector("#undo");
+    const hintButton = document.querySelector("#hint");
     const core9Modal = document.querySelector("#core9-modal");
+    const winModal = document.querySelector("#win-modal");
     const regularModeButton = document.querySelector("#regular-mode");
     const core9ModeButton = document.querySelector("#core9-mode");
+    const difficultySelect = document.querySelector("#difficulty");
 
     function shuffled(items) {
       const result = [...items];
@@ -221,54 +214,45 @@
       );
     }
 
-    function makeTransformedBoards() {
+    function makeSolution() {
       const rowOrder = shuffledRowOrColumnOrder();
       const colOrder = shuffledRowOrColumnOrder();
       const digits = shuffled([1, 2, 3, 4, 5, 6, 7, 8, 9]);
       const digitMap = new Map(digits.map((digit, index) => [index + 1, digit]));
       const transpose = Math.random() < 0.5;
-
-      const transform = source => Array.from({ length: 9 }, (_, row) =>
+      return Array.from({ length: 9 }, (_, row) =>
         Array.from({ length: 9 }, (_, col) => {
           const sourceRow = transpose ? colOrder[col] : rowOrder[row];
           const sourceCol = transpose ? rowOrder[row] : colOrder[col];
-          const value = source[sourceRow][sourceCol];
-          return value === 0 ? 0 : digitMap.get(value);
+          return digitMap.get(baseSolution[sourceRow][sourceCol]);
         })
       );
-
-      return { puzzle: transform(basePuzzle), solution: transform(baseSolution) };
     }
 
     function getCoreCenters(grid) {
       const centers = [];
       for (let row = 1; row < 9; row += 3) {
-        for (let col = 1; col < 9; col += 3) {
-          centers.push({ row, col, value: grid[row][col] });
-        }
+        for (let col = 1; col < 9; col += 3) centers.push({ row, col, value: grid[row][col] });
       }
       return centers;
     }
 
-    function makeNewPuzzle(mode = currentMode) {
-      currentMode = mode;
-      let generated;
-      // Core 9 puzzles must have nine distinct center values in their solution.
+    function createPuzzle(mode, difficulty) {
+      let candidate;
+      // Core 9 needs a solution whose nine center values are all distinct.
       do {
-        generated = makeTransformedBoards();
-      } while (mode === "core9" && new Set(getCoreCenters(generated.solution).map(cell => cell.value)).size !== 9);
+        candidate = makeSolution();
+      } while (mode === "core9" && new Set(getCoreCenters(candidate).map(cell => cell.value)).size !== 9);
 
-      board = generated.puzzle.map(row => [...row]);
-      solution = generated.solution;
-      givenCells = generated.puzzle.map(row => row.map(number => number !== 0));
-      selectedCell = null;
-      moveHistory.length = 0;
-      updateUndoButton();
-      updateModeDisplay();
-      renderBoard();
-      messageElement.textContent = mode === "core9"
-        ? "Core 9 puzzle ready. All nine center answers are different."
-        : "New regular puzzle ready. Good luck!";
+      const clueCells = shuffled(Array.from({ length: 81 }, (_, index) => index))
+        .slice(0, CLUES_BY_DIFFICULTY[difficulty]);
+      const puzzle = Array.from({ length: 9 }, () => Array(9).fill(0));
+      for (const index of clueCells) {
+        const row = Math.floor(index / 9);
+        const col = index % 9;
+        puzzle[row][col] = candidate[row][col];
+      }
+      return { puzzle, solution: candidate };
     }
 
     function updateModeDisplay() {
@@ -282,24 +266,50 @@
         : "Fill each row, column, and 3×3 box with the numbers 1–9.";
     }
 
+    function updateStatus() {
+      document.querySelector("#mistakes").textContent = `Mistakes: ${mistakeCount}`;
+      document.querySelector("#hints").textContent = `Hints: ${hintCount}/3`;
+      hintButton.textContent = `Hint (${3 - hintCount})`;
+      hintButton.disabled = hintCount >= 3 || gameWon;
+      undoButton.disabled = moveHistory.length === 0 || gameWon;
+    }
+
+    function makeNewPuzzle(mode = currentMode) {
+      currentMode = mode;
+      const difficulty = difficultySelect.value;
+      const generated = createPuzzle(mode, difficulty);
+      board = generated.puzzle.map(row => [...row]);
+      solution = generated.solution;
+      givenCells = board.map(row => row.map(number => number !== 0));
+      selectedCell = null;
+      mistakeCount = 0;
+      hintCount = 0;
+      gameWon = false;
+      moveHistory.length = 0;
+      winModal.hidden = true;
+      updateModeDisplay();
+      updateStatus();
+      renderBoard();
+      messageElement.textContent = `${difficulty[0].toUpperCase()}${difficulty.slice(1)} ${mode === "core9" ? "Core 9" : "regular"} puzzle ready. Good luck!`;
+    }
+
+    function isCoreCenter(row, col) {
+      return row % 3 === 1 && col % 3 === 1;
+    }
+
     function findConflicts(row, col, number) {
       const conflicts = new Set();
-
       for (let i = 0; i < 9; i++) {
         if (i !== col && board[row][i] === number) conflicts.add("row");
         if (i !== row && board[i][col] === number) conflicts.add("column");
       }
-
       const boxStartRow = Math.floor(row / 3) * 3;
       const boxStartCol = Math.floor(col / 3) * 3;
       for (let r = boxStartRow; r < boxStartRow + 3; r++) {
         for (let c = boxStartCol; c < boxStartCol + 3; c++) {
-          if ((r !== row || c !== col) && board[r][c] === number) {
-            conflicts.add("3×3 box");
-          }
+          if ((r !== row || c !== col) && board[r][c] === number) conflicts.add("3×3 box");
         }
       }
-
       if (currentMode === "core9" && isCoreCenter(row, col)) {
         for (const center of getCoreCenters(board)) {
           if ((center.row !== row || center.col !== col) && center.value === number) {
@@ -311,17 +321,8 @@
       return [...conflicts];
     }
 
-    function isCoreCenter(row, col) {
-      return row % 3 === 1 && col % 3 === 1;
-    }
-
-    function updateUndoButton() {
-      undoButton.disabled = moveHistory.length === 0;
-    }
-
     function renderBoard() {
       boardElement.replaceChildren();
-
       for (let row = 0; row < 9; row++) {
         for (let col = 0; col < 9; col++) {
           const cell = document.createElement("button");
@@ -329,135 +330,169 @@
           cell.className = "cell";
           cell.textContent = board[row][col] || "";
           cell.setAttribute("aria-label", `Row ${row + 1}, column ${col + 1}, ${board[row][col] || "empty"}${givenCells[row][col] ? ", starting clue" : ""}`);
-
           if (givenCells[row][col]) cell.classList.add("given");
           if (col === 2 || col === 5) cell.classList.add("box-right");
           if (row === 2 || row === 5) cell.classList.add("box-bottom");
           if (currentMode === "core9" && isCoreCenter(row, col)) cell.classList.add("core-center");
-          if (board[row][col] !== 0 && findConflicts(row, col, board[row][col]).length) {
-            cell.classList.add("conflict");
-          }
-
+          if (board[row][col] !== 0 && findConflicts(row, col, board[row][col]).length) cell.classList.add("conflict");
           if (selectedCell) {
             const sameRow = row === selectedCell.row;
             const sameColumn = col === selectedCell.col;
-            const sameBox = Math.floor(row / 3) === Math.floor(selectedCell.row / 3) &&
-              Math.floor(col / 3) === Math.floor(selectedCell.col / 3);
+            const sameBox = Math.floor(row / 3) === Math.floor(selectedCell.row / 3) && Math.floor(col / 3) === Math.floor(selectedCell.col / 3);
             if (sameRow || sameColumn || sameBox) cell.classList.add("related");
             if (sameRow && sameColumn) cell.classList.add("selected");
           }
-
           cell.addEventListener("click", () => {
             selectedCell = { row, col };
             renderBoard();
-            messageElement.textContent = givenCells[row][col]
-              ? "That is a starting clue. Select an empty cell."
-              : "Enter a number from 1 to 9.";
+            messageElement.textContent = givenCells[row][col] ? "That is a starting clue. Select an empty cell." : "Enter a number from 1 to 9.";
           });
           boardElement.appendChild(cell);
         }
       }
     }
 
+    function setCellValue(row, col, value, isHint = false) {
+      const previousValue = board[row][col];
+      if (previousValue === value) return false;
+      moveHistory.push({ row, col, previousValue, isHint });
+      board[row][col] = value;
+      return true;
+    }
+
     function enterNumber(number) {
+      if (gameWon) return;
       if (!selectedCell) {
         messageElement.textContent = "Select an empty cell first.";
         return;
       }
-
       const { row, col } = selectedCell;
       if (givenCells[row][col]) {
         messageElement.textContent = "You cannot change a starting clue.";
         return;
       }
-
-      const previousValue = board[row][col];
-      if (previousValue === number) return;
-
-      moveHistory.push({ row, col, previousValue });
-      board[row][col] = number;
-      updateUndoButton();
+      if (!setCellValue(row, col, number)) return;
+      if (number !== 0 && findConflicts(row, col, number).length) mistakeCount++;
+      updateStatus();
       renderBoard();
+      messageElement.textContent = number === 0 ? "Cell erased." : (findConflicts(row, col, number).length ? `${number} conflicts with a Sudoku rule and is marked red. You can keep solving.` : `Entered ${number}.`);
+    }
 
-      if (number === 0) {
-        messageElement.textContent = "Cell erased.";
-      } else {
-        const conflicts = findConflicts(row, col, number);
-        messageElement.textContent = conflicts.length
-          ? `${number} conflicts with the ${conflicts.join(" and ")}; marked red. You can keep solving.`
-          : `Entered ${number}.`;
+    function useHint() {
+      if (gameWon || hintCount >= 3) return;
+      if (!selectedCell) {
+        messageElement.textContent = "Select an empty cell to use a hint.";
+        return;
       }
+      const { row, col } = selectedCell;
+      if (givenCells[row][col] || board[row][col] !== 0) {
+        messageElement.textContent = "Choose an empty cell for your hint.";
+        return;
+      }
+      setCellValue(row, col, solution[row][col], true);
+      hintCount++;
+      updateStatus();
+      renderBoard();
+      const conflicts = findConflicts(row, col, board[row][col]);
+      messageElement.textContent = conflicts.length
+        ? `Hint entered. It is correct, but another entry currently conflicts with it.`
+        : "Hint entered. Keep going!";
     }
 
     function undoMove() {
+      if (gameWon) return;
       const lastMove = moveHistory.pop();
       if (!lastMove) return;
-
       board[lastMove.row][lastMove.col] = lastMove.previousValue;
       selectedCell = { row: lastMove.row, col: lastMove.col };
-      updateUndoButton();
+      updateStatus();
       renderBoard();
-      messageElement.textContent = "Last move undone.";
+      messageElement.textContent = "Last move undone. Mistakes and hints used are not refunded.";
     }
 
-    document.querySelectorAll("[data-number]").forEach(button => {
-      button.addEventListener("click", () => enterNumber(Number(button.dataset.number)));
-    });
+    function randomQuote(quotes) {
+      return quotes[Math.floor(Math.random() * quotes.length)];
+    }
 
-    document.querySelector("#erase").addEventListener("click", () => enterNumber(0));
-    document.querySelector("#new-game").addEventListener("click", () => makeNewPuzzle());
-    undoButton.addEventListener("click", undoMove);
+    function showWinPopup() {
+      let rating;
+      let quote;
+      if (mistakeCount === 0 && hintCount === 0) {
+        rating = "Flawless";
+        quote = randomQuote(QUOTES.flawless);
+      } else if (mistakeCount === 0 && hintCount > 0) {
+        rating = "Clean grid";
+        quote = randomQuote(QUOTES.clean);
+      } else if (mistakeCount >= 4) {
+        rating = "Many mistakes";
+        quote = randomQuote(QUOTES.many);
+      } else if (hintCount === 0) {
+        rating = "A few mistakes";
+        quote = randomQuote(QUOTES.few);
+      } else {
+        rating = "Still KooL";
+        quote = randomQuote(QUOTES.assisted);
+      }
+      document.querySelector("#win-rating").textContent = `${rating} · ${currentMode === "core9" ? "Core 9" : "Regular"} · ${difficultySelect.value[0].toUpperCase()}${difficultySelect.value.slice(1)}`;
+      document.querySelector("#win-quote").textContent = `“${quote}”`;
+      document.querySelector("#win-stats").textContent = `Rule mistakes: ${mistakeCount} · Hints used: ${hintCount}/3`;
+      gameWon = true;
+      updateStatus();
+      winModal.hidden = false;
+      document.querySelector("#close-win").focus();
+    }
 
-    regularModeButton.addEventListener("click", () => {
-      core9Modal.hidden = true;
-      makeNewPuzzle("regular");
-    });
-
-    core9ModeButton.addEventListener("click", () => {
-      core9Modal.hidden = false;
-      document.querySelector("#start-core9").focus();
-    });
-
-    document.querySelector("#start-core9").addEventListener("click", () => {
-      core9Modal.hidden = true;
-      makeNewPuzzle("core9");
-    });
-
-    document.querySelector("#cancel-core9").addEventListener("click", () => {
-      core9Modal.hidden = true;
-      regularModeButton.focus();
-    });
-
-    document.querySelector("#check").addEventListener("click", () => {
+    function checkPuzzle() {
+      if (gameWon) return;
       if (board.some(row => row.includes(0))) {
         messageElement.textContent = "Keep going—some cells are still empty.";
         return;
       }
-
       if (board.some((row, r) => row.some((value, c) => value !== solution[r][c]))) {
         messageElement.textContent = "Not quite right yet. Check your entries and try again.";
         return;
       }
-
       if (currentMode === "core9" && new Set(getCoreCenters(board).map(cell => cell.value)).size !== 9) {
         messageElement.textContent = "The nine center cells must all be different.";
         return;
       }
+      showWinPopup();
+    }
 
-      messageElement.textContent = currentMode === "core9"
-        ? "Amazing! You solved Core 9!"
-        : "Congratulations! You solved the Sudoku!";
+    document.querySelectorAll("[data-number]").forEach(button => button.addEventListener("click", () => enterNumber(Number(button.dataset.number))));
+    document.querySelector("#erase").addEventListener("click", () => enterNumber(0));
+    document.querySelector("#hint").addEventListener("click", useHint);
+    document.querySelector("#undo").addEventListener("click", undoMove);
+    document.querySelector("#check").addEventListener("click", checkPuzzle);
+    document.querySelector("#new-game").addEventListener("click", () => makeNewPuzzle());
+
+    regularModeButton.addEventListener("click", () => makeNewPuzzle("regular"));
+    core9ModeButton.addEventListener("click", () => {
+      core9Modal.hidden = false;
+      document.querySelector("#start-core9").focus();
     });
+    document.querySelector("#start-core9").addEventListener("click", () => {
+      core9Modal.hidden = true;
+      makeNewPuzzle("core9");
+    });
+    document.querySelector("#cancel-core9").addEventListener("click", () => {
+      core9Modal.hidden = true;
+      regularModeButton.focus();
+    });
+    document.querySelector("#close-win").addEventListener("click", () => {
+      winModal.hidden = true;
+      messageElement.textContent = "Puzzle solved! Start a new game whenever you’re ready.";
+    });
+    document.querySelector("#win-new-game").addEventListener("click", () => makeNewPuzzle());
 
     document.addEventListener("keydown", event => {
-      if (!core9Modal.hidden) {
+      if (!core9Modal.hidden || !winModal.hidden) {
         if (event.key === "Escape") {
           core9Modal.hidden = true;
-          regularModeButton.focus();
+          winModal.hidden = true;
         }
         return;
       }
-
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
         undoMove();
