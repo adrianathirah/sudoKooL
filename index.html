@@ -6,29 +6,17 @@
   <title>sudoKooL</title>
   <style>
     * { box-sizing: border-box; }
-    body {
-      margin: 0; min-height: 100vh; display: grid; place-items: center;
-      padding: 24px; background: #f3f5fb; color: #20243a;
-      font-family: system-ui, sans-serif;
-    }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #f3f5fb; color: #20243a; font-family: system-ui, sans-serif; }
     main { width: min(100%, 440px); text-align: center; }
     h1 { margin-bottom: 8px; }
     .instructions { margin-top: 0; color: #60677d; }
     .difficulty-picker { margin: 14px 0; }
     .difficulty-picker strong { display: block; margin-bottom: 8px; }
     #difficulty-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .difficulty-button.active { background: #dce5ff; border-color: #526de5; font-weight: 700; }
+    .difficulty-button.active, .mode-button.active { background: #dce5ff; border-color: #526de5; font-weight: 700; }
     #mode-controls { display: flex; justify-content: center; gap: 8px; margin: 12px 0; }
-    #board {
-      display: grid; grid-template-columns: repeat(9, 1fr); width: 100%; aspect-ratio: 1;
-      margin: 20px auto; border: 3px solid #252b44; background: white;
-    }
-    .cell {
-      display: grid; place-items: center; min-width: 0; padding: 0; border: 0;
-      border-right: 1px solid #b9bfd0; border-bottom: 1px solid #b9bfd0;
-      border-radius: 0; background: white; color: #3348a5;
-      font-size: clamp(16px, 5vw, 26px); cursor: pointer;
-    }
+    #board { display: grid; grid-template-columns: repeat(9, 1fr); width: 100%; aspect-ratio: 1; margin: 20px auto; border: 3px solid #252b44; background: white; }
+    .cell { display: grid; place-items: center; min-width: 0; padding: 0; border: 0; border-right: 1px solid #b9bfd0; border-bottom: 1px solid #b9bfd0; border-radius: 0; background: white; color: #3348a5; font-size: clamp(16px, 5vw, 26px); cursor: pointer; }
     .cell.box-right { border-right: 3px solid #252b44; }
     .cell.box-bottom { border-bottom: 3px solid #252b44; }
     .cell.given { background: #eef0f6; color: #20243a; font-weight: 700; }
@@ -38,37 +26,23 @@
     .cell.conflict { color: #b42318; background: #ffebe9; }
     .cell.core-center { box-shadow: inset 0 0 0 1px #a4afe0; }
     .cell:focus-visible, button:focus-visible { outline: 3px solid #526de5; outline-offset: 2px; z-index: 1; }
-    button {
-      min-height: 42px; border: 1px solid #ccd1df; border-radius: 8px;
-      background: white; color: #20243a; font-size: 16px; cursor: pointer; padding: 8px 12px;
-    }
+    button { min-height: 42px; border: 1px solid #ccd1df; border-radius: 8px; background: white; color: #20243a; font-size: 16px; cursor: pointer; padding: 8px 12px; }
     button:hover:not(:disabled) { background: #e8edff; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .mode-button.active { background: #dce5ff; border-color: #526de5; font-weight: 700; }
     .controls { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
     .controls button { min-width: 0; padding: 6px; font-size: 17px; }
     .action-controls { grid-template-columns: repeat(4, 1fr); margin-top: 8px; }
     #status { display: flex; justify-content: center; gap: 18px; margin: 10px 0 0; color: #4a5269; }
     #message { min-height: 1.5em; margin-top: 12px; color: #4a5269; }
-    .modal-backdrop {
-      position: fixed; inset: 0; z-index: 5; display: grid; place-items: center;
-      padding: 20px; background: rgb(25 31 52 / 55%);
-    }
+    .modal-backdrop { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; padding: 20px; background: rgb(25 31 52 / 55%); }
     .modal-backdrop[hidden] { display: none; }
-    .modal {
-      width: min(100%, 420px); padding: 24px; border-radius: 16px; background: white;
-      box-shadow: 0 16px 48px rgb(0 0 0 / 22%); text-align: left;
-    }
+    .modal { width: min(100%, 420px); padding: 24px; border-radius: 16px; background: white; box-shadow: 0 16px 48px rgb(0 0 0 / 22%); text-align: left; }
     .modal h2 { margin-top: 0; text-align: center; }
     .modal li { margin: 10px 0; }
     .modal-actions { display: grid; gap: 8px; margin-top: 20px; }
     .modal-actions button.primary { background: #526de5; color: white; border-color: #526de5; }
     .win-stats { text-align: center; color: #4a5269; }
-    @media (max-width: 380px) {
-      body { padding: 12px; }
-      .controls button { font-size: 15px; }
-      #status { gap: 10px; font-size: 14px; }
-    }
+    @media (max-width: 380px) { body { padding: 12px; } .controls button { font-size: 15px; } #status { gap: 10px; font-size: 14px; } }
   </style>
 </head>
 <body>
@@ -91,27 +65,13 @@
     </div>
 
     <div id="board" aria-label="Sudoku board"></div>
-
     <div class="controls" aria-label="Number controls">
-      <button type="button" data-number="1">1</button>
-      <button type="button" data-number="2">2</button>
-      <button type="button" data-number="3">3</button>
-      <button type="button" data-number="4">4</button>
-      <button type="button" data-number="5">5</button>
-      <button type="button" data-number="6">6</button>
-      <button type="button" data-number="7">7</button>
-      <button type="button" data-number="8">8</button>
-      <button type="button" data-number="9">9</button>
-      <button type="button" id="erase">Erase</button>
+      <button type="button" data-number="1">1</button><button type="button" data-number="2">2</button><button type="button" data-number="3">3</button><button type="button" data-number="4">4</button><button type="button" data-number="5">5</button>
+      <button type="button" data-number="6">6</button><button type="button" data-number="7">7</button><button type="button" data-number="8">8</button><button type="button" data-number="9">9</button><button type="button" id="erase">Erase</button>
     </div>
-
     <div class="controls action-controls">
-      <button type="button" id="new-game">New Game</button>
-      <button type="button" id="undo" disabled>Undo</button>
-      <button type="button" id="hint">Hint (3)</button>
-      <button type="button" id="check">Check</button>
+      <button type="button" id="new-game">New Game</button><button type="button" id="undo" disabled>Undo</button><button type="button" id="hint">Hint (3)</button><button type="button" id="check">Check</button>
     </div>
-
     <p id="status"><span id="mistakes">Mistakes: 0</span><span id="hints">Hints: 0/3</span></p>
     <p id="message" aria-live="polite">Select an empty cell to begin.</p>
   </main>
@@ -120,16 +80,8 @@
     <section class="modal">
       <h2 id="core9-title">Core 9 Rules</h2>
       <p>Play by the regular Sudoku rules, plus one extra challenge:</p>
-      <ul>
-        <li>The center cell of each 3×3 box makes nine center cells total.</li>
-        <li>All nine center cells must contain different numbers (1–9).</li>
-        <li>Choose Easy, Medium, or Hard before starting. The selected difficulty is shown above.</li>
-        <li>Hints are limited to three. Rule conflicts stay on the board and are marked red.</li>
-      </ul>
-      <div class="modal-actions">
-        <button type="button" class="primary" id="start-core9">Start Core 9</button>
-        <button type="button" id="cancel-core9">Back to Regular Mode</button>
-      </div>
+      <ul><li>The center cell of each 3×3 box makes nine center cells total.</li><li>All nine center cells must contain different numbers (1–9).</li><li>Choose Easy, Medium, or Hard before starting.</li><li>Hints are limited to three. Rule conflicts stay on the board and are marked red.</li></ul>
+      <div class="modal-actions"><button type="button" class="primary" id="start-core9">Start Core 9</button><button type="button" id="cancel-core9">Back to Regular Mode</button></div>
     </section>
   </div>
 
@@ -139,26 +91,16 @@
       <p id="win-rating" style="text-align:center;font-weight:700;font-size:1.2rem;"></p>
       <p id="win-quote" style="text-align:center;"></p>
       <p class="win-stats" id="win-stats"></p>
-      <div class="modal-actions">
-        <button type="button" class="primary" id="close-win">Keep playing</button>
-        <button type="button" id="win-new-game">New Game</button>
-      </div>
+      <div class="modal-actions"><button type="button" class="primary" id="close-win">Keep playing</button><button type="button" id="win-new-game">New Game</button></div>
     </section>
   </div>
 
   <script>
     const baseSolution = [
-      [5, 3, 4, 6, 7, 8, 9, 1, 2],
-      [6, 7, 2, 1, 9, 5, 3, 4, 8],
-      [1, 9, 8, 3, 4, 2, 5, 6, 7],
-      [8, 5, 9, 7, 6, 1, 4, 2, 3],
-      [4, 2, 6, 8, 5, 3, 7, 9, 1],
-      [7, 1, 3, 9, 2, 4, 8, 5, 6],
-      [9, 6, 1, 5, 3, 7, 2, 8, 4],
-      [2, 8, 7, 4, 1, 9, 6, 3, 5],
-      [3, 4, 5, 2, 8, 6, 1, 7, 9]
+      [5, 3, 4, 6, 7, 8, 9, 1, 2], [6, 7, 2, 1, 9, 5, 3, 4, 8], [1, 9, 8, 3, 4, 2, 5, 6, 7],
+      [8, 5, 9, 7, 6, 1, 4, 2, 3], [4, 2, 6, 8, 5, 3, 7, 9, 1], [7, 1, 3, 9, 2, 4, 8, 5, 6],
+      [9, 6, 1, 5, 3, 7, 2, 8, 4], [2, 8, 7, 4, 1, 9, 6, 3, 5], [3, 4, 5, 2, 8, 6, 1, 7, 9]
     ];
-
     const CLUES_BY_DIFFICULTY = { easy: 40, medium: 32, hard: 26 };
     const QUOTES = {
       flawless: ["Zero mistakes? Show-off. We love it.", "Perfect score! Please leave some talent for the rest of us."],
@@ -168,17 +110,9 @@
       assisted: ["A little help, a few detours, and a well-earned win!", "You kept at it and got there. Nice solving!"]
     };
 
-    let board;
-    let solution;
-    let givenCells;
-    let selectedCell = null;
-    let currentMode = "regular";
-    let currentDifficulty = "easy";
-    let mistakeCount = 0;
-    let hintCount = 0;
-    let gameWon = false;
+    let board, solution, givenCells, selectedCell = null;
+    let currentMode = "regular", currentDifficulty = "easy", mistakeCount = 0, hintCount = 0, gameWon = false;
     const moveHistory = [];
-
     const boardElement = document.querySelector("#board");
     const messageElement = document.querySelector("#message");
     const undoButton = document.querySelector("#undo");
@@ -196,53 +130,34 @@
       }
       return result;
     }
-
     function shuffledRowOrColumnOrder() {
-      return shuffled([0, 1, 2]).flatMap(group =>
-        shuffled([0, 1, 2]).map(offset => group * 3 + offset)
-      );
+      return shuffled([0, 1, 2]).flatMap(group => shuffled([0, 1, 2]).map(offset => group * 3 + offset));
     }
-
     function makeSolution() {
-      const rowOrder = shuffledRowOrColumnOrder();
-      const colOrder = shuffledRowOrColumnOrder();
+      const rowOrder = shuffledRowOrColumnOrder(), colOrder = shuffledRowOrColumnOrder();
       const digits = shuffled([1, 2, 3, 4, 5, 6, 7, 8, 9]);
       const digitMap = new Map(digits.map((digit, index) => [index + 1, digit]));
       const transpose = Math.random() < 0.5;
-      return Array.from({ length: 9 }, (_, row) =>
-        Array.from({ length: 9 }, (_, col) => {
-          const sourceRow = transpose ? colOrder[col] : rowOrder[row];
-          const sourceCol = transpose ? rowOrder[row] : colOrder[col];
-          return digitMap.get(baseSolution[sourceRow][sourceCol]);
-        })
-      );
+      return Array.from({ length: 9 }, (_, row) => Array.from({ length: 9 }, (_, col) => {
+        const sourceRow = transpose ? colOrder[col] : rowOrder[row];
+        const sourceCol = transpose ? rowOrder[row] : colOrder[col];
+        return digitMap.get(baseSolution[sourceRow][sourceCol]);
+      }));
     }
-
     function getCoreCenters(grid) {
       const centers = [];
-      for (let row = 1; row < 9; row += 3) {
-        for (let col = 1; col < 9; col += 3) centers.push({ row, col, value: grid[row][col] });
-      }
+      for (let row = 1; row < 9; row += 3) for (let col = 1; col < 9; col += 3) centers.push({ row, col, value: grid[row][col] });
       return centers;
     }
-
     function createPuzzle(mode, difficulty) {
       let candidate;
-      do {
-        candidate = makeSolution();
-      } while (mode === "core9" && new Set(getCoreCenters(candidate).map(cell => cell.value)).size !== 9);
-
-      const clueCells = shuffled(Array.from({ length: 81 }, (_, index) => index))
-        .slice(0, CLUES_BY_DIFFICULTY[difficulty]);
+      do { candidate = makeSolution(); }
+      while (mode === "core9" && new Set(getCoreCenters(candidate).map(cell => cell.value)).size !== 9);
+      const clueCells = shuffled(Array.from({ length: 81 }, (_, index) => index)).slice(0, CLUES_BY_DIFFICULTY[difficulty]);
       const puzzle = Array.from({ length: 9 }, () => Array(9).fill(0));
-      for (const index of clueCells) {
-        const row = Math.floor(index / 9);
-        const col = index % 9;
-        puzzle[row][col] = candidate[row][col];
-      }
+      for (const index of clueCells) puzzle[Math.floor(index / 9)][index % 9] = candidate[Math.floor(index / 9)][index % 9];
       return { puzzle, solution: candidate };
     }
-
     function updateModeDisplay() {
       const isCore9 = currentMode === "core9";
       regularModeButton.classList.toggle("active", !isCore9);
@@ -253,7 +168,6 @@
         ? "Standard Sudoku rules apply. The nine center cells must also all be different."
         : "Fill each row, column, and 3×3 box with the numbers 1–9.";
     }
-
     function updateDifficultyButtons() {
       document.querySelectorAll("[data-difficulty]").forEach(button => {
         const active = button.dataset.difficulty === currentDifficulty;
@@ -261,7 +175,6 @@
         button.setAttribute("aria-pressed", String(active));
       });
     }
-
     function updateStatus() {
       document.querySelector("#mistakes").textContent = `Mistakes: ${mistakeCount}`;
       document.querySelector("#hints").textContent = `Hints: ${hintCount}/3`;
@@ -269,189 +182,115 @@
       hintButton.disabled = hintCount >= 3 || gameWon;
       undoButton.disabled = moveHistory.length === 0 || gameWon;
     }
-
     function makeNewPuzzle(mode = currentMode) {
       currentMode = mode;
       const generated = createPuzzle(mode, currentDifficulty);
       board = generated.puzzle.map(row => [...row]);
       solution = generated.solution;
       givenCells = board.map(row => row.map(number => number !== 0));
-      selectedCell = null;
-      mistakeCount = 0;
-      hintCount = 0;
-      gameWon = false;
-      moveHistory.length = 0;
-      winModal.hidden = true;
-      updateModeDisplay();
-      updateDifficultyButtons();
-      updateStatus();
-      renderBoard();
+      selectedCell = null; mistakeCount = 0; hintCount = 0; gameWon = false;
+      moveHistory.length = 0; winModal.hidden = true;
+      updateModeDisplay(); updateDifficultyButtons(); updateStatus(); renderBoard();
       const label = currentDifficulty[0].toUpperCase() + currentDifficulty.slice(1);
       messageElement.textContent = `${label} ${mode === "core9" ? "Core 9" : "regular"} puzzle ready. Good luck!`;
     }
-
     function isCoreCenter(row, col) { return row % 3 === 1 && col % 3 === 1; }
-
     function findConflicts(row, col, number) {
       const conflicts = new Set();
       for (let i = 0; i < 9; i++) {
         if (i !== col && board[row][i] === number) conflicts.add("row");
         if (i !== row && board[i][col] === number) conflicts.add("column");
       }
-      const boxStartRow = Math.floor(row / 3) * 3;
-      const boxStartCol = Math.floor(col / 3) * 3;
-      for (let r = boxStartRow; r < boxStartRow + 3; r++) {
-        for (let c = boxStartCol; c < boxStartCol + 3; c++) {
-          if ((r !== row || c !== col) && board[r][c] === number) conflicts.add("3×3 box");
-        }
+      const boxStartRow = Math.floor(row / 3) * 3, boxStartCol = Math.floor(col / 3) * 3;
+      for (let r = boxStartRow; r < boxStartRow + 3; r++) for (let c = boxStartCol; c < boxStartCol + 3; c++) {
+        if ((r !== row || c !== col) && board[r][c] === number) conflicts.add("3×3 box");
       }
       if (currentMode === "core9" && isCoreCenter(row, col)) {
         for (const center of getCoreCenters(board)) {
-          if ((center.row !== row || center.col !== col) && center.value === number) {
-            conflicts.add("Core 9 centers");
-            break;
-          }
+          if ((center.row !== row || center.col !== col) && center.value === number) { conflicts.add("Core 9 centers"); break; }
         }
       }
       return [...conflicts];
     }
-
     function renderBoard() {
       boardElement.replaceChildren();
-      for (let row = 0; row < 9; row++) {
-        for (let col = 0; col < 9; col++) {
-          const cell = document.createElement("button");
-          cell.type = "button";
-          cell.className = "cell";
-          cell.textContent = board[row][col] || "";
-          cell.setAttribute("aria-label", `Row ${row + 1}, column ${col + 1}, ${board[row][col] || "empty"}${givenCells[row][col] ? ", starting clue" : ""}`);
-          if (givenCells[row][col]) cell.classList.add("given");
-          if (col === 2 || col === 5) cell.classList.add("box-right");
-          if (row === 2 || row === 5) cell.classList.add("box-bottom");
-          if (currentMode === "core9" && isCoreCenter(row, col)) cell.classList.add("core-center");
-          if (board[row][col] !== 0 && findConflicts(row, col, board[row][col]).length) cell.classList.add("conflict");
-          if (selectedCell) {
-            const sameRow = row === selectedCell.row;
-            const sameColumn = col === selectedCell.col;
-            const sameBox = Math.floor(row / 3) === Math.floor(selectedCell.row / 3) && Math.floor(col / 3) === Math.floor(selectedCell.col / 3);
-            if (sameRow || sameColumn || sameBox) cell.classList.add("related");
-            if (sameRow && sameColumn) cell.classList.add("selected");
-          }
-          cell.addEventListener("click", () => {
-            selectedCell = { row, col };
-            renderBoard();
-            messageElement.textContent = givenCells[row][col] ? "That is a starting clue. Select an empty cell." : "Enter a number from 1 to 9.";
-          });
-          boardElement.appendChild(cell);
+      for (let row = 0; row < 9; row++) for (let col = 0; col < 9; col++) {
+        const cell = document.createElement("button");
+        cell.type = "button"; cell.className = "cell"; cell.textContent = board[row][col] || "";
+        cell.setAttribute("aria-label", `Row ${row + 1}, column ${col + 1}, ${board[row][col] || "empty"}${givenCells[row][col] ? ", starting clue" : ""}`);
+        if (givenCells[row][col]) cell.classList.add("given");
+        if (col === 2 || col === 5) cell.classList.add("box-right");
+        if (row === 2 || row === 5) cell.classList.add("box-bottom");
+        if (currentMode === "core9" && isCoreCenter(row, col)) cell.classList.add("core-center");
+        if (board[row][col] !== 0 && findConflicts(row, col, board[row][col]).length) cell.classList.add("conflict");
+        if (selectedCell) {
+          const sameRow = row === selectedCell.row, sameColumn = col === selectedCell.col;
+          const sameBox = Math.floor(row / 3) === Math.floor(selectedCell.row / 3) && Math.floor(col / 3) === Math.floor(selectedCell.col / 3);
+          if (sameRow || sameColumn || sameBox) cell.classList.add("related");
+          if (sameRow && sameColumn) cell.classList.add("selected");
         }
+        cell.addEventListener("click", () => {
+          selectedCell = { row, col }; renderBoard();
+          messageElement.textContent = givenCells[row][col] ? "That is a starting clue. Select an empty cell." : "Enter a number from 1 to 9.";
+        });
+        boardElement.appendChild(cell);
       }
     }
-
     function setCellValue(row, col, value) {
       const previousValue = board[row][col];
       if (previousValue === value) return false;
-      moveHistory.push({ row, col, previousValue });
-      board[row][col] = value;
-      return true;
+      moveHistory.push({ row, col, previousValue }); board[row][col] = value; return true;
     }
-
     function enterNumber(number) {
       if (gameWon) return;
-      if (!selectedCell) {
-        messageElement.textContent = "Select an empty cell first.";
-        return;
-      }
+      if (!selectedCell) { messageElement.textContent = "Select an empty cell first."; return; }
       const { row, col } = selectedCell;
-      if (givenCells[row][col]) {
-        messageElement.textContent = "You cannot change a starting clue.";
-        return;
-      }
+      if (givenCells[row][col]) { messageElement.textContent = "You cannot change a starting clue."; return; }
       if (!setCellValue(row, col, number)) return;
       if (number !== 0 && findConflicts(row, col, number).length) mistakeCount++;
-      updateStatus();
-      renderBoard();
+      updateStatus(); renderBoard();
       const conflicts = number === 0 ? [] : findConflicts(row, col, number);
       messageElement.textContent = number === 0 ? "Cell erased." : conflicts.length
-        ? `${number} conflicts with a Sudoku rule and is marked red. You can keep solving.`
-        : `Entered ${number}.`;
+        ? `${number} conflicts with a Sudoku rule and is marked red. You can keep solving.` : `Entered ${number}.`;
     }
-
     function useHint() {
       if (gameWon || hintCount >= 3) return;
-      if (!selectedCell) {
-        messageElement.textContent = "Select an empty cell to use a hint.";
-        return;
-      }
+      if (!selectedCell) { messageElement.textContent = "Select an empty cell to use a hint."; return; }
       const { row, col } = selectedCell;
-      if (givenCells[row][col] || board[row][col] !== 0) {
-        messageElement.textContent = "Choose an empty cell for your hint.";
-        return;
-      }
-      setCellValue(row, col, solution[row][col]);
-      hintCount++;
-      updateStatus();
-      renderBoard();
+      if (givenCells[row][col] || board[row][col] !== 0) { messageElement.textContent = "Choose an empty cell for your hint."; return; }
+      setCellValue(row, col, solution[row][col]); hintCount++; updateStatus(); renderBoard();
       messageElement.textContent = findConflicts(row, col, board[row][col]).length
-        ? "Hint entered. It is correct, but another entry currently conflicts with it."
-        : "Hint entered. Keep going!";
+        ? "Hint entered. It is correct, but another entry currently conflicts with it." : "Hint entered. Keep going!";
     }
-
     function undoMove() {
       if (gameWon) return;
-      const lastMove = moveHistory.pop();
-      if (!lastMove) return;
+      const lastMove = moveHistory.pop(); if (!lastMove) return;
       board[lastMove.row][lastMove.col] = lastMove.previousValue;
       selectedCell = { row: lastMove.row, col: lastMove.col };
-      updateStatus();
-      renderBoard();
-      messageElement.textContent = "Last move undone. Mistakes and hints used are not refunded.";
+      updateStatus(); renderBoard(); messageElement.textContent = "Last move undone. Mistakes and hints used are not refunded.";
     }
-
     function randomQuote(quotes) { return quotes[Math.floor(Math.random() * quotes.length)]; }
-
     function showWinPopup() {
-      let rating;
-      let quote;
-      if (mistakeCount === 0 && hintCount === 0) {
-        rating = "Flawless";
-        quote = randomQuote(QUOTES.flawless);
-      } else if (mistakeCount === 0 && hintCount > 0) {
-        rating = "Clean grid";
-        quote = randomQuote(QUOTES.clean);
-      } else if (mistakeCount >= 4) {
-        rating = "Many mistakes";
-        quote = randomQuote(QUOTES.many);
-      } else if (hintCount === 0) {
-        rating = "A few mistakes";
-        quote = randomQuote(QUOTES.few);
-      } else {
-        rating = "Still KooL";
-        quote = randomQuote(QUOTES.assisted);
-      }
+      let rating, quote;
+      if (mistakeCount === 0 && hintCount === 0) { rating = "Flawless"; quote = randomQuote(QUOTES.flawless); }
+      else if (mistakeCount === 0 && hintCount > 0) { rating = "Clean grid"; quote = randomQuote(QUOTES.clean); }
+      else if (mistakeCount >= 4) { rating = "Many mistakes"; quote = randomQuote(QUOTES.many); }
+      else if (hintCount === 0) { rating = "A few mistakes"; quote = randomQuote(QUOTES.few); }
+      else { rating = "Still KooL"; quote = randomQuote(QUOTES.assisted); }
       const difficultyName = currentDifficulty[0].toUpperCase() + currentDifficulty.slice(1);
       document.querySelector("#win-rating").textContent = `${rating} · ${currentMode === "core9" ? "Core 9" : "Regular"} · ${difficultyName}`;
       document.querySelector("#win-quote").textContent = `“${quote}”`;
       document.querySelector("#win-stats").textContent = `Rule mistakes: ${mistakeCount} · Hints used: ${hintCount}/3`;
-      gameWon = true;
-      updateStatus();
-      winModal.hidden = false;
-      document.querySelector("#close-win").focus();
+      gameWon = true; updateStatus(); winModal.hidden = false; document.querySelector("#close-win").focus();
     }
-
     function checkPuzzle() {
       if (gameWon) return;
-      if (board.some(row => row.includes(0))) {
-        messageElement.textContent = "Keep going—some cells are still empty.";
-        return;
-      }
-      if (board.some((row, r) => row.some((value, c) => value !== solution[r][c]))) {
-        messageElement.textContent = "Not quite right yet. Check your entries and try again.";
-        return;
-      }
-      if (currentMode === "core9" && new Set(getCoreCenters(board).map(cell => cell.value)).size !== 9) {
-        messageElement.textContent = "The nine center cells must all be different.";
-        return;
-      }
+      if (board.some(row => row.includes(0))) { messageElement.textContent = "Keep going—some cells are still empty."; return; }
+
+      // A completed board wins when it obeys the rules; it need not match the
+      // particular solution used to generate the clues or provide hints.
+      const hasRuleConflict = board.some((row, r) => row.some((value, c) => findConflicts(r, c, value).length > 0));
+      if (hasRuleConflict) { messageElement.textContent = "Some numbers still conflict with the Sudoku rules (red cells). Correct them and check again."; return; }
       showWinPopup();
     }
 
@@ -461,53 +300,23 @@
     document.querySelector("#undo").addEventListener("click", undoMove);
     document.querySelector("#check").addEventListener("click", checkPuzzle);
     document.querySelector("#new-game").addEventListener("click", () => makeNewPuzzle());
-
-    document.querySelectorAll("[data-difficulty]").forEach(button => {
-      button.addEventListener("click", () => {
-        const chosenDifficulty = button.dataset.difficulty;
-        if (chosenDifficulty === currentDifficulty) return;
-        currentDifficulty = chosenDifficulty;
-        makeNewPuzzle(currentMode);
-      });
-    });
-
+    document.querySelectorAll("[data-difficulty]").forEach(button => button.addEventListener("click", () => {
+      const chosenDifficulty = button.dataset.difficulty;
+      if (chosenDifficulty === currentDifficulty) return;
+      currentDifficulty = chosenDifficulty; makeNewPuzzle(currentMode);
+    }));
     regularModeButton.addEventListener("click", () => makeNewPuzzle("regular"));
-    core9ModeButton.addEventListener("click", () => {
-      core9Modal.hidden = false;
-      document.querySelector("#start-core9").focus();
-    });
-    document.querySelector("#start-core9").addEventListener("click", () => {
-      core9Modal.hidden = true;
-      makeNewPuzzle("core9");
-    });
-    document.querySelector("#cancel-core9").addEventListener("click", () => {
-      core9Modal.hidden = true;
-      regularModeButton.focus();
-    });
-    document.querySelector("#close-win").addEventListener("click", () => {
-      winModal.hidden = true;
-      messageElement.textContent = "Puzzle solved! Start a new game whenever you’re ready.";
-    });
+    core9ModeButton.addEventListener("click", () => { core9Modal.hidden = false; document.querySelector("#start-core9").focus(); });
+    document.querySelector("#start-core9").addEventListener("click", () => { core9Modal.hidden = true; makeNewPuzzle("core9"); });
+    document.querySelector("#cancel-core9").addEventListener("click", () => { core9Modal.hidden = true; regularModeButton.focus(); });
+    document.querySelector("#close-win").addEventListener("click", () => { winModal.hidden = true; messageElement.textContent = "Puzzle solved! Start a new game whenever you’re ready."; });
     document.querySelector("#win-new-game").addEventListener("click", () => makeNewPuzzle());
-
     document.addEventListener("keydown", event => {
-      if (!core9Modal.hidden || !winModal.hidden) {
-        if (event.key === "Escape") {
-          core9Modal.hidden = true;
-          winModal.hidden = true;
-        }
-        return;
-      }
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
-        event.preventDefault();
-        undoMove();
-      } else if (/^[1-9]$/.test(event.key)) {
-        enterNumber(Number(event.key));
-      } else if (event.key === "Backspace" || event.key === "Delete") {
-        enterNumber(0);
-      }
+      if (!core9Modal.hidden || !winModal.hidden) { if (event.key === "Escape") { core9Modal.hidden = true; winModal.hidden = true; } return; }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") { event.preventDefault(); undoMove(); }
+      else if (/^[1-9]$/.test(event.key)) enterNumber(Number(event.key));
+      else if (event.key === "Backspace" || event.key === "Delete") enterNumber(0);
     });
-
     makeNewPuzzle("regular");
   </script>
 </body>
