@@ -22,6 +22,13 @@
     h1 { margin-bottom: 8px; }
     .instructions { margin-top: 0; color: #60677d; }
 
+    #mode-controls {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin: 16px 0;
+    }
+
     #board {
       display: grid;
       grid-template-columns: repeat(9, 1fr);
@@ -53,32 +60,71 @@
     .cell.related { background: #f2f5ff; }
     .cell.given.selected { background: #dce5ff; }
     .cell.conflict { color: #b42318; background: #ffebe9; }
+    .cell.core-center { box-shadow: inset 0 0 0 1px #a4afe0; }
 
-    .cell:focus-visible, .controls button:focus-visible {
+    .cell:focus-visible, button:focus-visible {
       outline: 3px solid #526de5;
       outline-offset: 2px;
       z-index: 1;
     }
 
-    .controls { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-    .controls button {
+    button {
       min-height: 42px;
       border: 1px solid #ccd1df;
       border-radius: 8px;
       background: white;
       color: #20243a;
-      font-size: 17px;
+      font-size: 16px;
       cursor: pointer;
+      padding: 8px 12px;
     }
-    .controls button:hover:not(:disabled) { background: #e8edff; }
-    .controls button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button:hover:not(:disabled) { background: #e8edff; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .mode-button.active { background: #dce5ff; border-color: #526de5; font-weight: 700; }
+
+    .controls { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .controls button { min-width: 0; padding: 6px; font-size: 17px; }
+    .action-controls { grid-template-columns: repeat(3, 1fr); margin-top: 8px; }
     #message { min-height: 1.5em; margin-top: 16px; color: #4a5269; }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: rgb(25 31 52 / 55%);
+    }
+    .modal-backdrop[hidden] { display: none; }
+    .modal {
+      width: min(100%, 420px);
+      padding: 24px;
+      border-radius: 16px;
+      background: white;
+      box-shadow: 0 16px 48px rgb(0 0 0 / 22%);
+      text-align: left;
+    }
+    .modal h2 { margin-top: 0; text-align: center; }
+    .modal li { margin: 10px 0; }
+    .modal-actions { display: grid; gap: 8px; margin-top: 20px; }
+    .modal-actions button:first-child { background: #526de5; color: white; border-color: #526de5; }
+
+    @media (max-width: 380px) {
+      body { padding: 12px; }
+      .controls button { font-size: 15px; }
+    }
   </style>
 </head>
 <body>
   <main>
     <h1>sudoKooL</h1>
-    <p class="instructions">Fill each row, column, and 3×3 box with the numbers 1–9.</p>
+    <p class="instructions" id="mode-instructions">Fill each row, column, and 3×3 box with the numbers 1–9.</p>
+
+    <div id="mode-controls" aria-label="Game modes">
+      <button type="button" class="mode-button active" id="regular-mode">Regular Mode</button>
+      <button type="button" class="mode-button" id="core9-mode">Core 9</button>
+    </div>
 
     <div id="board" aria-label="Sudoku board"></div>
 
@@ -95,7 +141,7 @@
       <button type="button" id="erase">Erase</button>
     </div>
 
-    <div class="controls" style="grid-template-columns: repeat(3, 1fr); margin-top: 8px;">
+    <div class="controls action-controls">
       <button type="button" id="new-game">New Game</button>
       <button type="button" id="undo" disabled>Undo</button>
       <button type="button" id="check">Check puzzle</button>
@@ -104,9 +150,24 @@
     <p id="message" aria-live="polite">Select an empty cell to begin.</p>
   </main>
 
+  <div class="modal-backdrop" id="core9-modal" role="dialog" aria-modal="true" aria-labelledby="core9-title" hidden>
+    <section class="modal">
+      <h2 id="core9-title">Core 9 Rules</h2>
+      <p>Play by the regular Sudoku rules, plus one extra challenge:</p>
+      <ul>
+        <li>The center cell of each 3×3 box makes nine center cells total.</li>
+        <li>All nine center cells must contain different numbers (1–9).</li>
+        <li>Conflicting numbers stay on the board and are marked red. You can fix them whenever you like.</li>
+      </ul>
+      <div class="modal-actions">
+        <button type="button" id="start-core9">Start Core 9</button>
+        <button type="button" id="cancel-core9">Back to Regular Mode</button>
+      </div>
+    </section>
+  </div>
+
   <script>
-    // This completed puzzle has a unique solution. Random row, column, and
-    // number permutations create a different valid puzzle each time.
+    // Each generated board is a valid transformation of this puzzle and solution.
     const basePuzzle = [
       [5, 3, 0, 0, 7, 0, 0, 0, 0],
       [6, 0, 0, 1, 9, 5, 0, 0, 0],
@@ -135,11 +196,15 @@
     let solution;
     let givenCells;
     let selectedCell = null;
+    let currentMode = "regular";
     const moveHistory = [];
 
     const boardElement = document.querySelector("#board");
     const messageElement = document.querySelector("#message");
     const undoButton = document.querySelector("#undo");
+    const core9Modal = document.querySelector("#core9-modal");
+    const regularModeButton = document.querySelector("#regular-mode");
+    const core9ModeButton = document.querySelector("#core9-mode");
 
     function shuffled(items) {
       const result = [...items];
@@ -156,7 +221,7 @@
       );
     }
 
-    function makeNewPuzzle() {
+    function makeTransformedBoards() {
       const rowOrder = shuffledRowOrColumnOrder();
       const colOrder = shuffledRowOrColumnOrder();
       const digits = shuffled([1, 2, 3, 4, 5, 6, 7, 8, 9]);
@@ -172,19 +237,51 @@
         })
       );
 
-      const puzzle = transform(basePuzzle);
-      solution = transform(baseSolution);
-      board = puzzle.map(row => [...row]);
-      givenCells = puzzle.map(row => row.map(number => number !== 0));
+      return { puzzle: transform(basePuzzle), solution: transform(baseSolution) };
+    }
+
+    function getCoreCenters(grid) {
+      const centers = [];
+      for (let row = 1; row < 9; row += 3) {
+        for (let col = 1; col < 9; col += 3) {
+          centers.push({ row, col, value: grid[row][col] });
+        }
+      }
+      return centers;
+    }
+
+    function makeNewPuzzle(mode = currentMode) {
+      currentMode = mode;
+      let generated;
+      // Core 9 puzzles must have nine distinct center values in their solution.
+      do {
+        generated = makeTransformedBoards();
+      } while (mode === "core9" && new Set(getCoreCenters(generated.solution).map(cell => cell.value)).size !== 9);
+
+      board = generated.puzzle.map(row => [...row]);
+      solution = generated.solution;
+      givenCells = generated.puzzle.map(row => row.map(number => number !== 0));
       selectedCell = null;
       moveHistory.length = 0;
       updateUndoButton();
+      updateModeDisplay();
       renderBoard();
-      messageElement.textContent = "New puzzle ready. Good luck!";
+      messageElement.textContent = mode === "core9"
+        ? "Core 9 puzzle ready. All nine center answers are different."
+        : "New regular puzzle ready. Good luck!";
     }
 
-    // Find actual duplicate entries; entries are still allowed so players can
-    // leave them in place and continue solving other parts of the puzzle.
+    function updateModeDisplay() {
+      const isCore9 = currentMode === "core9";
+      regularModeButton.classList.toggle("active", !isCore9);
+      core9ModeButton.classList.toggle("active", isCore9);
+      regularModeButton.setAttribute("aria-pressed", String(!isCore9));
+      core9ModeButton.setAttribute("aria-pressed", String(isCore9));
+      document.querySelector("#mode-instructions").textContent = isCore9
+        ? "Standard Sudoku rules apply. The nine center cells must also all be different."
+        : "Fill each row, column, and 3×3 box with the numbers 1–9.";
+    }
+
     function findConflicts(row, col, number) {
       const conflicts = new Set();
 
@@ -202,7 +299,20 @@
           }
         }
       }
+
+      if (currentMode === "core9" && isCoreCenter(row, col)) {
+        for (const center of getCoreCenters(board)) {
+          if ((center.row !== row || center.col !== col) && center.value === number) {
+            conflicts.add("Core 9 centers");
+            break;
+          }
+        }
+      }
       return [...conflicts];
+    }
+
+    function isCoreCenter(row, col) {
+      return row % 3 === 1 && col % 3 === 1;
     }
 
     function updateUndoButton() {
@@ -223,7 +333,7 @@
           if (givenCells[row][col]) cell.classList.add("given");
           if (col === 2 || col === 5) cell.classList.add("box-right");
           if (row === 2 || row === 5) cell.classList.add("box-bottom");
-
+          if (currentMode === "core9" && isCoreCenter(row, col)) cell.classList.add("core-center");
           if (board[row][col] !== 0 && findConflicts(row, col, board[row][col]).length) {
             cell.classList.add("conflict");
           }
@@ -273,11 +383,9 @@
         messageElement.textContent = "Cell erased.";
       } else {
         const conflicts = findConflicts(row, col, number);
-        if (conflicts.length) {
-          messageElement.textContent = `${number} is duplicated in the same ${conflicts.join(", ")}; marked red. You can keep solving.`;
-        } else {
-          messageElement.textContent = `Entered ${number}.`;
-        }
+        messageElement.textContent = conflicts.length
+          ? `${number} conflicts with the ${conflicts.join(" and ")}; marked red. You can keep solving.`
+          : `Entered ${number}.`;
       }
     }
 
@@ -297,8 +405,28 @@
     });
 
     document.querySelector("#erase").addEventListener("click", () => enterNumber(0));
-    document.querySelector("#new-game").addEventListener("click", makeNewPuzzle);
+    document.querySelector("#new-game").addEventListener("click", () => makeNewPuzzle());
     undoButton.addEventListener("click", undoMove);
+
+    regularModeButton.addEventListener("click", () => {
+      core9Modal.hidden = true;
+      makeNewPuzzle("regular");
+    });
+
+    core9ModeButton.addEventListener("click", () => {
+      core9Modal.hidden = false;
+      document.querySelector("#start-core9").focus();
+    });
+
+    document.querySelector("#start-core9").addEventListener("click", () => {
+      core9Modal.hidden = true;
+      makeNewPuzzle("core9");
+    });
+
+    document.querySelector("#cancel-core9").addEventListener("click", () => {
+      core9Modal.hidden = true;
+      regularModeButton.focus();
+    });
 
     document.querySelector("#check").addEventListener("click", () => {
       if (board.some(row => row.includes(0))) {
@@ -311,10 +439,25 @@
         return;
       }
 
-      messageElement.textContent = "Congratulations! You solved the Sudoku!";
+      if (currentMode === "core9" && new Set(getCoreCenters(board).map(cell => cell.value)).size !== 9) {
+        messageElement.textContent = "The nine center cells must all be different.";
+        return;
+      }
+
+      messageElement.textContent = currentMode === "core9"
+        ? "Amazing! You solved Core 9!"
+        : "Congratulations! You solved the Sudoku!";
     });
 
     document.addEventListener("keydown", event => {
+      if (!core9Modal.hidden) {
+        if (event.key === "Escape") {
+          core9Modal.hidden = true;
+          regularModeButton.focus();
+        }
+        return;
+      }
+
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
         undoMove();
@@ -325,7 +468,7 @@
       }
     });
 
-    makeNewPuzzle();
+    makeNewPuzzle("regular");
   </script>
 </body>
 </html>
