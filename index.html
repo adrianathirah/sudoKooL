@@ -70,7 +70,8 @@
       font-size: 17px;
       cursor: pointer;
     }
-    .controls button:hover { background: #e8edff; }
+    .controls button:hover:not(:disabled) { background: #e8edff; }
+    .controls button:disabled { opacity: 0.5; cursor: not-allowed; }
     #message { min-height: 1.5em; margin-top: 16px; color: #4a5269; }
   </style>
 </head>
@@ -94,8 +95,9 @@
       <button type="button" id="erase">Erase</button>
     </div>
 
-    <div class="controls" style="grid-template-columns: repeat(2, 1fr); margin-top: 8px;">
+    <div class="controls" style="grid-template-columns: repeat(3, 1fr); margin-top: 8px;">
       <button type="button" id="new-game">New Game</button>
+      <button type="button" id="undo" disabled>Undo</button>
       <button type="button" id="check">Check puzzle</button>
     </div>
 
@@ -133,9 +135,11 @@
     let solution;
     let givenCells;
     let selectedCell = null;
+    const moveHistory = [];
 
     const boardElement = document.querySelector("#board");
     const messageElement = document.querySelector("#message");
+    const undoButton = document.querySelector("#undo");
 
     function shuffled(items) {
       const result = [...items];
@@ -173,11 +177,14 @@
       board = puzzle.map(row => [...row]);
       givenCells = puzzle.map(row => row.map(number => number !== 0));
       selectedCell = null;
+      moveHistory.length = 0;
+      updateUndoButton();
       renderBoard();
       messageElement.textContent = "New puzzle ready. Good luck!";
     }
 
-    // Return the exact kinds of duplicate found, ignoring the cell being edited.
+    // Find actual duplicate entries; entries are still allowed so players can
+    // leave them in place and continue solving other parts of the puzzle.
     function findConflicts(row, col, number) {
       const conflicts = new Set();
 
@@ -196,6 +203,10 @@
         }
       }
       return [...conflicts];
+    }
+
+    function updateUndoButton() {
+      undoButton.disabled = moveHistory.length === 0;
     }
 
     function renderBoard() {
@@ -250,18 +261,35 @@
         return;
       }
 
-      const conflicts = number === 0 ? [] : findConflicts(row, col, number);
-      if (conflicts.length) {
-        const places = conflicts.length === 1
-          ? conflicts[0]
-          : `${conflicts.slice(0, -1).join(", ")} and ${conflicts.at(-1)}`;
-        messageElement.textContent = `${number} is already in the same ${places}.`;
-        return;
-      }
+      const previousValue = board[row][col];
+      if (previousValue === number) return;
 
+      moveHistory.push({ row, col, previousValue });
       board[row][col] = number;
+      updateUndoButton();
       renderBoard();
-      messageElement.textContent = number === 0 ? "Cell erased." : `Entered ${number}.`;
+
+      if (number === 0) {
+        messageElement.textContent = "Cell erased.";
+      } else {
+        const conflicts = findConflicts(row, col, number);
+        if (conflicts.length) {
+          messageElement.textContent = `${number} is duplicated in the same ${conflicts.join(", ")}; marked red. You can keep solving.`;
+        } else {
+          messageElement.textContent = `Entered ${number}.`;
+        }
+      }
+    }
+
+    function undoMove() {
+      const lastMove = moveHistory.pop();
+      if (!lastMove) return;
+
+      board[lastMove.row][lastMove.col] = lastMove.previousValue;
+      selectedCell = { row: lastMove.row, col: lastMove.col };
+      updateUndoButton();
+      renderBoard();
+      messageElement.textContent = "Last move undone.";
     }
 
     document.querySelectorAll("[data-number]").forEach(button => {
@@ -270,6 +298,7 @@
 
     document.querySelector("#erase").addEventListener("click", () => enterNumber(0));
     document.querySelector("#new-game").addEventListener("click", makeNewPuzzle);
+    undoButton.addEventListener("click", undoMove);
 
     document.querySelector("#check").addEventListener("click", () => {
       if (board.some(row => row.includes(0))) {
@@ -286,8 +315,14 @@
     });
 
     document.addEventListener("keydown", event => {
-      if (/^[1-9]$/.test(event.key)) enterNumber(Number(event.key));
-      else if (event.key === "Backspace" || event.key === "Delete") enterNumber(0);
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        undoMove();
+      } else if (/^[1-9]$/.test(event.key)) {
+        enterNumber(Number(event.key));
+      } else if (event.key === "Backspace" || event.key === "Delete") {
+        enterNumber(0);
+      }
     });
 
     makeNewPuzzle();
