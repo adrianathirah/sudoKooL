@@ -20,8 +20,9 @@
     .cell.box-right { border-right: 3px solid #252b44; }
     .cell.box-bottom { border-bottom: 3px solid #252b44; }
     .cell.given { background: #eef0f6; color: #20243a; font-weight: 700; }
+    /* Related row/column/box cells use a warm tint so they are distinct from clues. */
+    .cell.related { background: #fff3cd; }
     .cell.selected { background: #dce5ff; outline: 2px solid #526de5; outline-offset: -2px; }
-    .cell.related { background: #f2f5ff; }
     .cell.given.selected { background: #dce5ff; }
     .cell.conflict { color: #b42318; background: #ffebe9; }
     .cell.core-center { box-shadow: inset 0 0 0 1px #a4afe0; }
@@ -33,6 +34,7 @@
     .controls button { min-width: 0; padding: 6px; font-size: 17px; }
     .action-controls { grid-template-columns: repeat(3, 1fr); margin-top: 8px; }
     #status { display: flex; justify-content: center; gap: 18px; margin: 10px 0 0; color: #4a5269; }
+    #timer { font-variant-numeric: tabular-nums; }
     #message { min-height: 1.5em; margin-top: 12px; color: #4a5269; }
     .modal-backdrop { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; padding: 20px; background: rgb(25 31 52 / 55%); }
     .modal-backdrop[hidden] { display: none; }
@@ -72,7 +74,7 @@
     <div class="controls action-controls">
       <button type="button" id="new-game">New Game</button><button type="button" id="undo" disabled>Undo</button><button type="button" id="hint">Hint (3)</button>
     </div>
-    <p id="status"><span id="mistakes">Mistakes: 0</span><span id="hints">Hints: 0/3</span></p>
+    <p id="status"><span id="timer" role="timer" aria-label="Elapsed time">Time: 00:00</span><span id="mistakes">Mistakes: 0</span><span id="hints">Hints: 0/3</span></p>
     <p id="message" aria-live="polite">Select an empty cell to begin.</p>
   </main>
 
@@ -110,6 +112,8 @@
 
     let board, solution, givenCells, selectedCell = null;
     let currentMode = "regular", currentDifficulty = "easy", mistakeCount = 0, hintCount = 0, gameWon = false;
+    let elapsedSeconds = 0;
+    let timerInterval = null;
     const moveHistory = [];
     const boardElement = document.querySelector("#board");
     const messageElement = document.querySelector("#message");
@@ -119,6 +123,26 @@
     const winModal = document.querySelector("#win-modal");
     const regularModeButton = document.querySelector("#regular-mode");
     const core9ModeButton = document.querySelector("#core9-mode");
+
+    function updateTimerDisplay() {
+      const minutes = Math.floor(elapsedSeconds / 60).toString().padStart(2, "0");
+      const seconds = (elapsedSeconds % 60).toString().padStart(2, "0");
+      document.querySelector("#timer").textContent = `Time: ${minutes}:${seconds}`;
+    }
+    function startTimer() {
+      clearInterval(timerInterval);
+      elapsedSeconds = 0;
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        if (gameWon) return;
+        elapsedSeconds++;
+        updateTimerDisplay();
+      }, 1000);
+    }
+    function stopTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
 
     function shuffled(items) {
       const result = [...items];
@@ -191,6 +215,7 @@
       updateModeDisplay(); updateDifficultyButtons(); updateStatus(); renderBoard();
       const label = currentDifficulty[0].toUpperCase() + currentDifficulty.slice(1);
       messageElement.textContent = `${label} ${mode === "core9" ? "Core 9" : "regular"} puzzle ready. Good luck!`;
+      startTimer();
     }
     function isCoreCenter(row, col) { return row % 3 === 1 && col % 3 === 1; }
     function findConflicts(row, col, number) {
@@ -278,7 +303,7 @@
       else if (hintCount === 0) quote = randomQuote(QUOTES.few);
       else quote = randomQuote(QUOTES.assisted);
       document.querySelector("#win-quote").textContent = quote;
-      gameWon = true; updateStatus(); winModal.hidden = false; document.querySelector("#win-new-game").focus();
+      gameWon = true; stopTimer(); updateStatus(); winModal.hidden = false; document.querySelector("#win-new-game").focus();
     }
     function checkForAutomaticWin() {
       if (gameWon || board.some(row => row.includes(0))) return;
