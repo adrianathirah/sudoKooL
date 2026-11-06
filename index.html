@@ -20,7 +20,6 @@
     .cell.box-right { border-right: 3px solid #252b44; }
     .cell.box-bottom { border-bottom: 3px solid #252b44; }
     .cell.given { background: #eef0f6; color: #20243a; font-weight: 700; }
-    /* Related row/column/box cells use a warm tint so they are distinct from clues. */
     .cell.related { background: #fff3cd; }
     .cell.selected { background: #dce5ff; outline: 2px solid #526de5; outline-offset: -2px; }
     .cell.given.selected { background: #dce5ff; }
@@ -42,16 +41,20 @@
     .modal h2 { margin-top: 0; text-align: center; }
     .modal li { margin: 10px 0; }
     .modal-actions { display: grid; gap: 8px; margin-top: 20px; }
-    .modal-actions button.primary { background: #526de5; color: white; border-color: #526de5; }
+    .modal-actions button:first-child { background: #526de5; color: white; border-color: #526de5; }
     #win-quote { text-align: center; }
+    #confetti-container { position: fixed; inset: 0; z-index: 20; overflow: hidden; pointer-events: none; }
+    .confetti-piece { position: absolute; top: -20px; width: 10px; height: 15px; opacity: 0; animation: confetti-fall 3.2s ease-in forwards; }
+    @keyframes confetti-fall { 0% { transform: translate3d(0, -10px, 0) rotate(0deg); opacity: 1; } 100% { transform: translate3d(var(--drift), 105vh, 0) rotate(var(--spin)); opacity: 0.9; } }
+    @media (prefers-reduced-motion: reduce) { .confetti-piece { animation-duration: 1ms; } }
     @media (max-width: 380px) { body { padding: 12px; } .controls button { font-size: 15px; } #status { gap: 10px; font-size: 14px; } }
   </style>
 </head>
 <body>
+  <div id="confetti-container" aria-hidden="true"></div>
   <main>
     <h1>sudoKooL</h1>
     <p class="instructions" id="mode-instructions">Fill each row, column, and 3×3 box with the numbers 1–9.</p>
-
     <section class="difficulty-picker" aria-label="Choose puzzle difficulty">
       <strong>Difficulty</strong>
       <div id="difficulty-controls">
@@ -60,12 +63,10 @@
         <button type="button" class="difficulty-button" data-difficulty="hard" aria-pressed="false">Hard</button>
       </div>
     </section>
-
     <div id="mode-controls" aria-label="Game modes">
       <button type="button" class="mode-button active" id="regular-mode" aria-pressed="true">Regular Mode</button>
       <button type="button" class="mode-button" id="core9-mode" aria-pressed="false">Core 9</button>
     </div>
-
     <div id="board" aria-label="Sudoku board"></div>
     <div class="controls" aria-label="Number controls">
       <button type="button" data-number="1">1</button><button type="button" data-number="2">2</button><button type="button" data-number="3">3</button><button type="button" data-number="4">4</button><button type="button" data-number="5">5</button>
@@ -83,7 +84,7 @@
       <h2 id="core9-title">Core 9 Rules</h2>
       <p>Play by the regular Sudoku rules, plus one extra challenge:</p>
       <ul><li>The center cell of each 3×3 box makes nine center cells total.</li><li>All nine center cells must contain different numbers (1–9).</li><li>Choose Easy, Medium, or Hard before starting.</li><li>Hints are limited to three. Rule conflicts stay on the board and are marked red.</li></ul>
-      <div class="modal-actions"><button type="button" class="primary" id="start-core9">Start Core 9</button><button type="button" id="cancel-core9">Back to Regular Mode</button></div>
+      <div class="modal-actions"><button type="button" id="start-core9">Start Core 9</button><button type="button" id="cancel-core9">Back to Regular Mode</button></div>
     </section>
   </div>
 
@@ -91,7 +92,7 @@
     <section class="modal">
       <h2 id="win-title">Puzzle complete!</h2>
       <p id="win-quote"></p>
-      <div class="modal-actions"><button type="button" class="primary" id="win-new-game">New Game</button></div>
+      <div class="modal-actions"><button type="button" id="win-new-game">New Game</button></div>
     </section>
   </div>
 
@@ -103,17 +104,16 @@
     ];
     const CLUES_BY_DIFFICULTY = { easy: 40, medium: 32, hard: 26 };
     const QUOTES = {
-      flawless: ["Zero mistakes? Show-off. We love it.", "Perfect score! Please leave some talent for the rest of us."],
-      clean: ["The hint helped, but I won’t tell anyone. Well played."],
-      few: ["Not perfect, but neither is anyone. Still KooL ~", "Mistakes were made. So was the grid. Well done!"],
-      many: ["You got there in the end. That’s what counts!", "That was… a journey. But hey, the grid is full. Nice one!"],
-      assisted: ["A little help, a few detours, and a well-earned win!", "You kept at it and got there. Nice solving!"]
+      flawless: ["Zero mistakes? Show-off. We love it 💯", "Perfect score! Please leave some talent for the rest of us 💯😮‍💨"],
+      clean: ["The hint helped, but I won’t tell anyone. Well played 🫣"],
+      few: ["Not perfect, but neither is anyone. Still KooL ~ 😎", "Mistakes were made. So was the grid. Well done! 💪🏻"],
+      many: ["You got there in the end. That’s what counts! 💪🏻🤩", "That was… a journey. But hey, the grid is full. Nice one! 🥳"],
+      assisted: ["You kept going, and that’s what counts! 💪🏻🤩", "A little help, a few detours, and a well-earned win! 🥳"]
     };
 
     let board, solution, givenCells, selectedCell = null;
     let currentMode = "regular", currentDifficulty = "easy", mistakeCount = 0, hintCount = 0, gameWon = false;
-    let elapsedSeconds = 0;
-    let timerInterval = null;
+    let elapsedSeconds = 0, timerInterval = null;
     const moveHistory = [];
     const boardElement = document.querySelector("#board");
     const messageElement = document.querySelector("#message");
@@ -139,11 +139,7 @@
         updateTimerDisplay();
       }, 1000);
     }
-    function stopTimer() {
-      clearInterval(timerInterval);
-      timerInterval = null;
-    }
-
+    function stopTimer() { clearInterval(timerInterval); timerInterval = null; }
     function shuffled(items) {
       const result = [...items];
       for (let i = result.length - 1; i > 0; i--) {
@@ -212,6 +208,7 @@
       givenCells = board.map(row => row.map(number => number !== 0));
       selectedCell = null; mistakeCount = 0; hintCount = 0; gameWon = false;
       moveHistory.length = 0; winModal.hidden = true;
+      document.querySelector("#confetti-container").replaceChildren();
       updateModeDisplay(); updateDifficultyButtons(); updateStatus(); renderBoard();
       const label = currentDifficulty[0].toUpperCase() + currentDifficulty.slice(1);
       messageElement.textContent = `${label} ${mode === "core9" ? "Core 9" : "regular"} puzzle ready. Good luck!`;
@@ -295,6 +292,23 @@
       updateStatus(); renderBoard(); messageElement.textContent = "Last move undone. Mistakes and hints used are not refunded.";
     }
     function randomQuote(quotes) { return quotes[Math.floor(Math.random() * quotes.length)]; }
+    function launchConfetti() {
+      const container = document.querySelector("#confetti-container");
+      container.replaceChildren();
+      const colors = ["#526de5", "#f4b400", "#e85d75", "#35a876", "#a855f7", "#ff7a45"];
+      for (let i = 0; i < 110; i++) {
+        const piece = document.createElement("span");
+        piece.className = "confetti-piece";
+        piece.style.left = `${Math.random() * 100}%`;
+        piece.style.backgroundColor = colors[i % colors.length];
+        piece.style.setProperty("--drift", `${Math.random() * 240 - 120}px`);
+        piece.style.setProperty("--spin", `${Math.random() * 1080 - 540}deg`);
+        piece.style.animationDelay = `${Math.random() * 0.9}s`;
+        piece.style.borderRadius = Math.random() > 0.5 ? "50%" : "2px";
+        container.appendChild(piece);
+        piece.addEventListener("animationend", () => piece.remove(), { once: true });
+      }
+    }
     function showWinPopup() {
       let quote;
       if (mistakeCount === 0 && hintCount === 0) quote = randomQuote(QUOTES.flawless);
@@ -303,7 +317,9 @@
       else if (hintCount === 0) quote = randomQuote(QUOTES.few);
       else quote = randomQuote(QUOTES.assisted);
       document.querySelector("#win-quote").textContent = quote;
-      gameWon = true; stopTimer(); updateStatus(); winModal.hidden = false; document.querySelector("#win-new-game").focus();
+      gameWon = true; stopTimer(); updateStatus(); winModal.hidden = false;
+      launchConfetti();
+      document.querySelector("#win-new-game").focus();
     }
     function checkForAutomaticWin() {
       if (gameWon || board.some(row => row.includes(0))) return;
