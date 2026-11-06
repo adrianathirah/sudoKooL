@@ -114,5 +114,689 @@
       background: linear-gradient(180deg, #fff 5%, #c8f1ff 48%, #7ddcff 78%, #2ba9dd 100%);
       background-clip: text;
       -webkit-background-clip: text;
-      -*
-
+      -webkit-text-fill-color: transparent;
+      -webkit-text-stroke: 1.5px #0872a6;
+      filter: drop-shadow(0 2px 0 #07537f) drop-shadow(0 0 7px white) drop-shadow(0 0 12px rgb(25 195 255 / 64%));
+      transform: rotate(var(--tilt));
+    }
+    .ice-letter::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      left: 4%; right: 4%; top: 5%; height: 15%;
+      border-radius: 55% 45% 45% 50%;
+      background: linear-gradient(180deg, #fff, #d8f6ff);
+      box-shadow: 0 1px 5px white;
+      -webkit-text-fill-color: initial;
+    }
+    .ice-letter::after {
+      content: "";
+      position: absolute;
+      left: 17%; bottom: -8px;
+      width: 23%; height: 15px;
+      border-radius: 0 0 60% 60%;
+      background: linear-gradient(180deg, #bceeff, #48bfe9 75%, #a8edff);
+      box-shadow: 0 0 6px rgb(255 255 255 / 95%);
+      animation: slow-melt 5.2s ease-in-out infinite;
+      transform-origin: top center;
+    }
+    .ice-letter:nth-child(2)::after { left: 62%; width: 17%; height: 10px; animation-delay: -2.4s; }
+    .ice-letter:nth-child(3)::after { left: 8%; width: 17%; height: 12px; animation-delay: -1.3s; }
+    .ice-letter:nth-child(4)::after { left: 65%; width: 20%; height: 15px; animation-delay: -3.1s; }
+    .ice-letter:nth-child(5)::after { left: 34%; width: 18%; height: 11px; animation-delay: -0.8s; }
+    @keyframes slow-melt {
+      0%, 75%, 100% { transform: scaleY(.88); opacity: .92; }
+      86% { transform: scaleY(1.3) translateY(2px); opacity: 1; }
+    }
+    .instructions { margin: 4px 0 10px; color: var(--muted); }
+    h2, strong, button { font-family: "Baloo 2", sans-serif; }
+    .difficulty-picker { margin: 14px 0; }
+    .difficulty-picker strong { display: block; margin-bottom: 7px; font-size: 19px; }
+    #difficulty-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    .difficulty-button.active, .mode-button.active {
+      background: var(--glow-soft);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      font-weight: 800;
+    }
+    #mode-controls { display: flex; justify-content: center; gap: 9px; margin: 12px 0; }
+
+    /* Frosted board card, bold 3x3 separators and distinct cell states. */
+    #board {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      width: 100%;
+      aspect-ratio: 1;
+      margin: 22px auto 18px;
+      overflow: visible;
+      border: 5px solid white;
+      border-radius: 19px;
+      background: var(--surface);
+      box-shadow: var(--shadow), 0 0 0 2px rgb(25 195 255 / 28%);
+      backdrop-filter: blur(12px);
+    }
+    #board::before, .modal::before {
+      content: "";
+      position: absolute;
+      z-index: 2;
+      pointer-events: none;
+      top: -8px;
+      left: 7%;
+      width: 86%;
+      height: 16px;
+      border-radius: 50% 45% 40% 55%;
+      background: linear-gradient(180deg, #fff 0%, #fff 48%, #d8f4ff 100%);
+      box-shadow: 0 3px 7px rgb(255 255 255 / 85%);
+    }
+    #board::after, .modal::after {
+      content: "";
+      position: absolute;
+      z-index: 2;
+      top: 1px;
+      left: 18%;
+      width: 11px;
+      height: 20px;
+      border-radius: 0 0 60% 60%;
+      background: linear-gradient(#fff, #b8eaff);
+      box-shadow: 104px 2px 0 -2px #e8f9ff, 220px 0 0 -1px #d8f4ff;
+      pointer-events: none;
+      animation: slow-melt 6s ease-in-out infinite;
+    }
+    .cell {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-width: 0;
+      padding: 0;
+      border: 0;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      border-radius: 0;
+      background: var(--surface-solid);
+      color: var(--cyan);
+      font-family: "Nunito", sans-serif;
+      font-size: clamp(16px, 5vw, 26px);
+      font-weight: 800;
+      cursor: pointer;
+      transition: background-color 140ms ease, color 140ms ease, border-radius 140ms ease;
+    }
+    .cell.box-right { border-right: 4px solid var(--line-strong); }
+    .cell.box-bottom { border-bottom: 4px solid var(--line-strong); }
+    .cell.given { background: var(--given-bg); color: var(--navy); font-weight: 900; }
+    .cell.related { background: var(--related); border-radius: 7px; }
+    .cell.same-number { background: #cff2ff; box-shadow: inset 0 0 0 1px rgb(0 119 182 / 20%); }
+    body.dark-mode .cell.same-number { background: #1a4864; }
+    .cell.selected {
+      z-index: 1;
+      background: #b9edff;
+      outline: 2px solid var(--glow);
+      outline-offset: -2px;
+      border-radius: 8px;
+      box-shadow: 0 0 13px rgb(25 195 255 / 42%);
+    }
+    .cell.given.selected { background: #b9edff; color: var(--navy); }
+    .cell.conflict {
+      color: var(--error);
+      background: var(--error-bg);
+      animation: error-shake 380ms ease-in-out 2, error-pulse 900ms ease-in-out 2;
+    }
+    @keyframes error-shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-3px); }
+      75% { transform: translateX(3px); }
+    }
+    @keyframes error-pulse { 50% { box-shadow: inset 0 0 0 2px rgb(180 35 50 / 38%); } }
+    .cell.hint-glow { animation: hint-glow 1.2s ease-out; }
+    @keyframes hint-glow {
+      0% { box-shadow: 0 0 0 0 rgb(25 195 255 / 85%); }
+      100% { box-shadow: 0 0 18px 8px rgb(25 195 255 / 0%); }
+    }
+    .cell.core-center { box-shadow: inset 0 0 0 1px var(--glow); }
+    .cell:focus-visible, button:focus-visible {
+      outline: 3px solid var(--glow);
+      outline-offset: 2px;
+      z-index: 3;
+    }
+
+    /* Rounded glossy bubble controls and status pills. */
+    button {
+      min-height: 46px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: linear-gradient(155deg, var(--surface-solid), var(--surface-soft));
+      color: var(--navy);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 8px 14px;
+      box-shadow: inset 0 2px 3px rgb(255 255 255 / 92%), 0 5px 12px rgb(28 94 130 / 10%);
+      transition: background 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+    }
+    button:hover:not(:disabled) {
+      background: linear-gradient(145deg, #fff, var(--glow-soft));
+      border-color: var(--glow);
+      transform: translateY(-2px);
+      box-shadow: inset 0 2px 4px white, 0 8px 18px rgb(25 153 204 / 20%);
+    }
+    button:active:not(:disabled) { transform: translateY(1px) scale(.97); }
+    button:disabled { opacity: .52; cursor: not-allowed; }
+    .controls { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .controls button { min-width: 0; padding: 6px; font: 700 17px "Baloo 2", sans-serif; }
+    .action-controls { grid-template-columns: repeat(3, 1fr); margin-top: 8px; }
+    #theme-toggle { margin: 2px 0 6px; }
+    #status {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin: 12px 0 0;
+      color: var(--muted);
+    }
+    #status span {
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+    }
+    #timer { font-variant-numeric: tabular-nums; }
+    #message { min-height: 1.5em; margin-top: 12px; color: var(--muted); }
+
+    /* Frosted win/rules cards with clear snow cap. */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: rgb(6 28 54 / 55%);
+    }
+    .modal-backdrop[hidden] { display: none; }
+    .modal {
+      position: relative;
+      width: min(100%, 420px);
+      padding: 30px 24px 24px;
+      border: 2px solid white;
+      border-radius: 26px;
+      background: var(--surface);
+      color: var(--navy);
+      box-shadow: var(--shadow), 0 0 24px rgb(25 195 255 / 20%);
+      backdrop-filter: blur(16px);
+      text-align: left;
+    }
+    .modal h2 {
+      margin: 0 0 10px;
+      text-align: center;
+      font: 800 28px/1.1 "Baloo 2", sans-serif;
+    }
+    .modal li { margin: 10px 0; }
+    .modal-actions { display: grid; gap: 9px; margin-top: 20px; }
+    .modal-actions button.primary, .modal-actions button:first-child {
+      background: linear-gradient(150deg, #dff8ff, #9fe8ff);
+      color: #07375a;
+      border-color: var(--glow);
+      font-weight: 800;
+    }
+    #win-quote { text-align: center; font-size: 17px; font-weight: 700; }
+
+    /* Continuous, click-through snowfall. */
+    #snowfall {
+      position: fixed;
+      inset: 0;
+      z-index: 4;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .snowflake {
+      position: absolute;
+      top: -24px;
+      color: white;
+      text-shadow: 0 0 8px rgb(25 195 255 / 80%);
+      animation: snowfall var(--duration) linear forwards, sway 2.8s ease-in-out infinite alternate;
+    }
+    @keyframes snowfall {
+      to { transform: translate3d(var(--drift), 110vh, 0) rotate(360deg); opacity: .15; }
+    }
+    @keyframes sway {
+      from { margin-left: -10px; }
+      to { margin-left: 10px; }
+    }
+    #mute-toggle {
+      position: fixed;
+      right: 14px;
+      bottom: 14px;
+      z-index: 12;
+      width: 48px;
+      min-height: 48px;
+      padding: 6px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+      #snowfall { display: none !important; }
+    }
+    @media (max-width: 380px) {
+      body { padding: 16px 10px 38px; }
+      .controls { gap: 5px; }
+      .controls button { min-height: 44px; padding: 4px; font-size: 15px; }
+      #status { gap: 5px; font-size: 13px; }
+      #board { border-width: 4px; }
+      .cell.box-right { border-right-width: 3px; }
+      .cell.box-bottom { border-bottom-width: 3px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="snowfall" aria-hidden="true"></div>
+  <main>
+    <h1 aria-label="sudoKooL">sudo<span class="logo-ice"><span class="ice-letter" style="--tilt:-4deg">K</span><span class="ice-letter" style="--tilt:3deg">o</span><span class="ice-letter" style="--tilt:-2deg">o</span><span class="ice-letter" style="--tilt:4deg">L</span></span></h1>
+    <p class="instructions" id="mode-instructions">Fill each row, column, and 3×3 box with the numbers 1–9.</p>
+    <button type="button" id="theme-toggle" aria-pressed="false" aria-label="Switch to dark mode">🌙 Night ice</button>
+    <section class="difficulty-picker" aria-label="Choose puzzle difficulty">
+      <strong>Difficulty</strong>
+      <div id="difficulty-controls">
+        <button type="button" class="difficulty-button active" data-difficulty="easy" aria-pressed="true">Easy</button>
+        <button type="button" class="difficulty-button" data-difficulty="medium" aria-pressed="false">Medium</button>
+        <button type="button" class="difficulty-button" data-difficulty="hard" aria-pressed="false">Hard</button>
+      </div>
+    </section>
+    <div id="mode-controls" aria-label="Game modes">
+      <button type="button" class="mode-button active" id="regular-mode" aria-pressed="true">Regular Mode</button>
+      <button type="button" class="mode-button" id="core9-mode" aria-pressed="false">Core 9</button>
+    </div>
+    <div id="board" aria-label="Sudoku board"></div>
+    <div class="controls" aria-label="Number controls">
+      <button type="button" data-number="1">1</button><button type="button" data-number="2">2</button><button type="button" data-number="3">3</button><button type="button" data-number="4">4</button><button type="button" data-number="5">5</button>
+      <button type="button" data-number="6">6</button><button type="button" data-number="7">7</button><button type="button" data-number="8">8</button><button type="button" data-number="9">9</button><button type="button" id="erase">Erase</button>
+    </div>
+    <div class="controls action-controls">
+      <button type="button" id="new-game">New Game</button><button type="button" id="undo" disabled>Undo</button><button type="button" id="hint">Hint (3)</button>
+    </div>
+    <p id="status"><span id="timer" role="timer" aria-label="Elapsed time">Time: 00:00</span><span id="mistakes">Mistakes: 0</span><span id="hints">Hints: 0/3</span></p>
+    <p id="message" aria-live="polite">Select an empty cell to begin.</p>
+  </main>
+  <button type="button" id="mute-toggle" aria-label="Mute win sound" aria-pressed="false" title="Mute win sound">🔊</button>
+
+  <div class="modal-backdrop" id="core9-modal" role="dialog" aria-modal="true" aria-labelledby="core9-title" hidden>
+    <section class="modal">
+      <h2 id="core9-title">Core 9 Rules</h2>
+      <p>Play by the regular Sudoku rules, plus one extra challenge:</p>
+      <ul><li>The center cell of each 3×3 box makes nine center cells total.</li><li>All nine center cells must contain different numbers (1–9).</li><li>Choose Easy, Medium, or Hard before starting.</li><li>Hints are limited to three. Rule conflicts stay on the board and are marked red.</li></ul>
+      <div class="modal-actions"><button type="button" class="primary" id="start-core9">Start Core 9</button><button type="button" id="cancel-core9">Back to Regular Mode</button></div>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="win-modal" role="dialog" aria-modal="true" aria-labelledby="win-title" hidden>
+    <section class="modal">
+      <h2 id="win-title">Puzzle complete!</h2>
+      <p id="win-quote"></p>
+      <div class="modal-actions"><button type="button" class="primary" id="win-new-game">New Game</button></div>
+    </section>
+  </div>
+
+  <script>
+    const baseSolution = [
+      [5, 3, 4, 6, 7, 8, 9, 1, 2], [6, 7, 2, 1, 9, 5, 3, 4, 8], [1, 9, 8, 3, 4, 2, 5, 6, 7],
+      [8, 5, 9, 7, 6, 1, 4, 2, 3], [4, 2, 6, 8, 5, 3, 7, 9, 1], [7, 1, 3, 9, 2, 4, 8, 5, 6],
+      [9, 6, 1, 5, 3, 7, 2, 8, 4], [2, 8, 7, 4, 1, 9, 6, 3, 5], [3, 4, 5, 2, 8, 6, 1, 7, 9]
+    ];
+    const CLUES_BY_DIFFICULTY = { easy: 40, medium: 32, hard: 26 };
+    const QUOTES = {
+      flawless: ["Zero mistakes? Show-off. We love it 💯", "Perfect score! Please leave some talent for the rest of us 💯😮‍💨"],
+      clean: ["The hint helped, but I won’t tell anyone. Well played 🫣"],
+      few: ["Not perfect, but neither is anyone. Still KooL ~ 😎", "Mistakes were made. So was the grid. Well done! 💪🏻"],
+      many: ["You got there in the end. That’s what counts! 💪🏻🤩", "That was… a journey. But hey, the grid is full. Nice one! 🥳"],
+      assisted: ["You kept going, and that’s what counts! 💪🏻🤩", "A little help, a few detours, and a well-earned win! 🥳"]
+    };
+
+    let board, solution, givenCells, selectedCell = null;
+    let currentMode = "regular", currentDifficulty = "easy", mistakeCount = 0, hintCount = 0, gameWon = false;
+    let elapsedSeconds = 0, timerInterval = null, windAudioContext = null, windGain = null, windStopTimer = null;
+    let sparkleTimeout = null;
+    let snowfallInterval = null;
+    const moveHistory = [];
+    const boardElement = document.querySelector("#board");
+    const messageElement = document.querySelector("#message");
+    const undoButton = document.querySelector("#undo");
+    const hintButton = document.querySelector("#hint");
+    const core9Modal = document.querySelector("#core9-modal");
+    const winModal = document.querySelector("#win-modal");
+    const regularModeButton = document.querySelector("#regular-mode");
+    const core9ModeButton = document.querySelector("#core9-mode");
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    function updateTimerDisplay() {
+      const minutes = Math.floor(elapsedSeconds / 60).toString().padStart(2, "0");
+      const seconds = (elapsedSeconds % 60).toString().padStart(2, "0");
+      document.querySelector("#timer").textContent = `Time: ${minutes}:${seconds}`;
+    }
+    function startTimer() {
+      clearInterval(timerInterval);
+      elapsedSeconds = 0;
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        if (gameWon) return;
+        elapsedSeconds++;
+        updateTimerDisplay();
+      }, 1000);
+    }
+    function stopTimer() { clearInterval(timerInterval); timerInterval = null; }
+    function shuffled(items) {
+      const result = [...items];
+      for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    }
+    function shuffledRowOrColumnOrder() {
+      return shuffled([0, 1, 2]).flatMap(group => shuffled([0, 1, 2]).map(offset => group * 3 + offset));
+    }
+    function makeSolution() {
+      const rowOrder = shuffledRowOrColumnOrder(), colOrder = shuffledRowOrColumnOrder();
+      const digits = shuffled([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      const digitMap = new Map(digits.map((digit, index) => [index + 1, digit]));
+      const transpose = Math.random() < 0.5;
+      return Array.from({ length: 9 }, (_, row) => Array.from({ length: 9 }, (_, col) => {
+        const sourceRow = transpose ? colOrder[col] : rowOrder[row];
+        const sourceCol = transpose ? rowOrder[row] : colOrder[col];
+        return digitMap.get(baseSolution[sourceRow][sourceCol]);
+      }));
+    }
+    function getCoreCenters(grid) {
+      const centers = [];
+      for (let row = 1; row < 9; row += 3) for (let col = 1; col < 9; col += 3) centers.push({ row, col, value: grid[row][col] });
+      return centers;
+    }
+    function createPuzzle(mode, difficulty) {
+      let candidate;
+      do { candidate = makeSolution(); }
+      while (mode === "core9" && new Set(getCoreCenters(candidate).map(cell => cell.value)).size !== 9);
+      const clueCells = shuffled(Array.from({ length: 81 }, (_, index) => index)).slice(0, CLUES_BY_DIFFICULTY[difficulty]);
+      const puzzle = Array.from({ length: 9 }, () => Array(9).fill(0));
+      for (const index of clueCells) puzzle[Math.floor(index / 9)][index % 9] = candidate[Math.floor(index / 9)][index % 9];
+      return { puzzle, solution: candidate };
+    }
+    function updateModeDisplay() {
+      const isCore9 = currentMode === "core9";
+      regularModeButton.classList.toggle("active", !isCore9);
+      core9ModeButton.classList.toggle("active", isCore9);
+      regularModeButton.setAttribute("aria-pressed", String(!isCore9));
+      core9ModeButton.setAttribute("aria-pressed", String(isCore9));
+      document.querySelector("#mode-instructions").textContent = isCore9
+        ? "Standard Sudoku rules apply. The nine center cells must also all be different."
+        : "Fill each row, column, and 3×3 box with the numbers 1–9.";
+    }
+    function updateDifficultyButtons() {
+      document.querySelectorAll("[data-difficulty]").forEach(button => {
+        const active = button.dataset.difficulty === currentDifficulty;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+    }
+    function updateStatus() {
+      document.querySelector("#mistakes").textContent = `Mistakes: ${mistakeCount}`;
+      document.querySelector("#hints").textContent = `Hints: ${hintCount}/3`;
+      hintButton.textContent = `Hint (${3 - hintCount})`;
+      hintButton.disabled = hintCount >= 3 || gameWon;
+      undoButton.disabled = moveHistory.length === 0 || gameWon;
+    }
+    function makeNewPuzzle(mode = currentMode) {
+      currentMode = mode;
+      const generated = createPuzzle(mode, currentDifficulty);
+      board = generated.puzzle.map(row => [...row]);
+      solution = generated.solution;
+      givenCells = board.map(row => row.map(number => number !== 0));
+      selectedCell = null; mistakeCount = 0; hintCount = 0; gameWon = false;
+      moveHistory.length = 0; winModal.hidden = true;
+      stopWindSound();
+      updateModeDisplay(); updateDifficultyButtons(); updateStatus(); renderBoard();
+      const label = currentDifficulty[0].toUpperCase() + currentDifficulty.slice(1);
+      messageElement.textContent = `${label} ${mode === "core9" ? "Core 9" : "regular"} puzzle ready. Good luck!`;
+      startTimer();
+    }
+    function isCoreCenter(row, col) { return row % 3 === 1 && col % 3 === 1; }
+    function findConflicts(row, col, number) {
+      const conflicts = new Set();
+      for (let i = 0; i < 9; i++) {
+        if (i !== col && board[row][i] === number) conflicts.add("row");
+        if (i !== row && board[i][col] === number) conflicts.add("column");
+      }
+      const boxStartRow = Math.floor(row / 3) * 3, boxStartCol = Math.floor(col / 3) * 3;
+      for (let r = boxStartRow; r < boxStartRow + 3; r++) for (let c = boxStartCol; c < boxStartCol + 3; c++) {
+        if ((r !== row || c !== col) && board[r][c] === number) conflicts.add("3×3 box");
+      }
+      if (currentMode === "core9" && isCoreCenter(row, col)) {
+        for (const center of getCoreCenters(board)) {
+          if ((center.row !== row || center.col !== col) && center.value === number) { conflicts.add("Core 9 centers"); break; }
+        }
+      }
+      return [...conflicts];
+    }
+    function renderBoard() {
+      boardElement.replaceChildren();
+      const selectedValue = selectedCell ? board[selectedCell.row][selectedCell.col] : 0;
+      for (let row = 0; row < 9; row++) for (let col = 0; col < 9; col++) {
+        const cell = document.createElement("button");
+        cell.type = "button"; cell.className = "cell"; cell.textContent = board[row][col] || "";
+        cell.setAttribute("aria-label", `Row ${row + 1}, column ${col + 1}, ${board[row][col] || "empty"}${givenCells[row][col] ? ", starting clue" : ""}`);
+        if (givenCells[row][col]) cell.classList.add("given");
+        if (col === 2 || col === 5) cell.classList.add("box-right");
+        if (row === 2 || row === 5) cell.classList.add("box-bottom");
+        if (currentMode === "core9" && isCoreCenter(row, col)) cell.classList.add("core-center");
+        if (board[row][col] !== 0 && findConflicts(row, col, board[row][col]).length) cell.classList.add("conflict");
+        if (selectedCell) {
+          const sameRow = row === selectedCell.row, sameColumn = col === selectedCell.col;
+          const sameBox = Math.floor(row / 3) === Math.floor(selectedCell.row / 3) && Math.floor(col / 3) === Math.floor(selectedCell.col / 3);
+          if (sameRow || sameColumn || sameBox) cell.classList.add("related");
+          if (row === selectedCell.row && col === selectedCell.col) cell.classList.add("selected");
+          if (selectedValue && board[row][col] === selectedValue) cell.classList.add("same-number");
+        }
+        cell.addEventListener("click", () => {
+          selectedCell = { row, col }; renderBoard();
+          messageElement.textContent = givenCells[row][col] ? "That is a starting clue. Select an empty cell." : "Enter a number from 1 to 9.";
+        });
+        boardElement.appendChild(cell);
+      }
+    }
+    function setCellValue(row, col, value) {
+      const previousValue = board[row][col];
+      if (previousValue === value) return false;
+      moveHistory.push({ row, col, previousValue }); board[row][col] = value; return true;
+    }
+    function enterNumber(number) {
+      if (gameWon) return;
+      if (!selectedCell) { messageElement.textContent = "Select an empty cell first."; return; }
+      const { row, col } = selectedCell;
+      if (givenCells[row][col]) { messageElement.textContent = "You cannot change a starting clue."; return; }
+      if (!setCellValue(row, col, number)) return;
+      if (number !== 0 && findConflicts(row, col, number).length) mistakeCount++;
+      updateStatus(); renderBoard();
+      const conflicts = number === 0 ? [] : findConflicts(row, col, number);
+      messageElement.textContent = number === 0 ? "Cell erased." : conflicts.length
+        ? `${number} conflicts with a Sudoku rule and is marked red. You can keep solving.` : `Entered ${number}.`;
+      checkForAutomaticWin();
+    }
+    function useHint() {
+      if (gameWon || hintCount >= 3) return;
+      if (!selectedCell) { messageElement.textContent = "Select an empty cell to use a hint."; return; }
+      const { row, col } = selectedCell;
+      if (givenCells[row][col] || board[row][col] !== 0) { messageElement.textContent = "Choose an empty cell for your hint."; return; }
+      setCellValue(row, col, solution[row][col]); hintCount++; updateStatus(); renderBoard();
+      const hintedCell = boardElement.children[row * 9 + col];
+      if (hintedCell) hintedCell.classList.add("hint-glow");
+      messageElement.textContent = findConflicts(row, col, board[row][col]).length
+        ? "Hint entered. It is correct, but another entry currently conflicts with it." : "Hint entered. Keep going!";
+      checkForAutomaticWin();
+    }
+    function undoMove() {
+      if (gameWon) return;
+      const lastMove = moveHistory.pop(); if (!lastMove) return;
+      board[lastMove.row][lastMove.col] = lastMove.previousValue;
+      selectedCell = { row: lastMove.row, col: lastMove.col };
+      updateStatus(); renderBoard(); messageElement.textContent = "Last move undone. Mistakes and hints used are not refunded.";
+    }
+    function randomQuote(quotes) { return quotes[Math.floor(Math.random() * quotes.length)]; }
+
+    /* Create snowflakes continuously; each is removed when its fall animation ends. */
+    function addSnowflake() {
+      if (prefersReducedMotion.matches) return;
+      const container = document.querySelector("#snowfall");
+      const flake = document.createElement("span");
+      flake.className = "snowflake";
+      flake.textContent = "❄";
+      flake.style.left = `${Math.random() * 100}%`;
+      flake.style.fontSize = `${8 + Math.random() * 17}px`;
+      flake.style.opacity = `${0.35 + Math.random() * 0.6}`;
+      flake.style.setProperty("--duration", `${7 + Math.random() * 7}s`);
+      flake.style.setProperty("--drift", `${Math.random() * 100 - 50}px`);
+      container.appendChild(flake);
+      flake.addEventListener("animationend", event => {
+        if (event.animationName === "snowfall") flake.remove();
+      });
+    }
+    function startSnowfall() {
+      if (prefersReducedMotion.matches || snowfallInterval) return;
+      for (let i = 0; i < 16; i++) {
+        setTimeout(addSnowflake, i * 180);
+      }
+      snowfallInterval = setInterval(addSnowflake, 450);
+    }
+
+    function stopWindSound() {
+      clearTimeout(windStopTimer);
+      windStopTimer = null;
+      if (windGain && windAudioContext) {
+        const now = windAudioContext.currentTime;
+        windGain.gain.cancelScheduledValues(now);
+        windGain.gain.setTargetAtTime(0, now, 0.12);
+      }
+      if (windAudioContext) {
+        const context = windAudioContext;
+        setTimeout(() => { if (context.state !== "closed") context.close().catch(() => {}); }, 500);
+      }
+      windAudioContext = null;
+      windGain = null;
+    }
+    function playWindSound() {
+      if (prefersReducedMotion.matches || localStorage.getItem("sudokool-muted") === "true") return;
+      stopWindSound();
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        const context = new AudioContextClass();
+        windAudioContext = context;
+        const gain = context.createGain();
+        windGain = gain;
+        gain.gain.setValueAtTime(0.0001, context.currentTime);
+        gain.gain.linearRampToValueAtTime(0.035, context.currentTime + 1.1);
+        gain.gain.setTargetAtTime(0.0001, context.currentTime + 4.3, 0.55);
+        const filter = context.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.value = 420;
+        const length = context.sampleRate * 5;
+        const buffer = context.createBuffer(1, length, context.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * 0.22;
+        const source = context.createBufferSource();
+        source.buffer = buffer;
+        source.connect(filter).connect(gain).connect(context.destination);
+        source.start();
+        source.stop(context.currentTime + 5.2);
+        windStopTimer = setTimeout(stopWindSound, 5600);
+      } catch (_) { stopWindSound(); }
+    }
+    function showWinPopup() {
+      let quote;
+      if (mistakeCount === 0 && hintCount === 0) quote = randomQuote(QUOTES.flawless);
+      else if (mistakeCount === 0 && hintCount > 0) quote = randomQuote(QUOTES.clean);
+      else if (mistakeCount >= 4) quote = randomQuote(QUOTES.many);
+      else if (hintCount === 0) quote = randomQuote(QUOTES.few);
+      else quote = randomQuote(QUOTES.assisted);
+      document.querySelector("#win-quote").textContent = quote;
+      gameWon = true; stopTimer(); updateStatus(); winModal.hidden = false;
+      playWindSound();
+      document.querySelector("#win-new-game").focus();
+    }
+    function checkForAutomaticWin() {
+      if (gameWon || board.some(row => row.includes(0))) return;
+      const hasRuleConflict = board.some((row, r) => row.some((value, c) => findConflicts(r, c, value).length > 0));
+      if (hasRuleConflict) {
+        messageElement.textContent = "Some numbers still conflict with the Sudoku rules (red cells). Correct them to complete the puzzle.";
+        return;
+      }
+      showWinPopup();
+    }
+    function checkCompletedUnits(row, col) {
+      const rowComplete = board[row].every(value => value !== 0);
+      const columnComplete = board.every(line => line[col] !== 0);
+      const boxRow = Math.floor(row / 3) * 3, boxCol = Math.floor(col / 3) * 3;
+      let boxComplete = true;
+      for (let r = boxRow; r < boxRow + 3; r++) for (let c = boxCol; c < boxCol + 3; c++) if (!board[r][c]) boxComplete = false;
+      if (rowComplete || columnComplete || boxComplete) {
+        boardElement.classList.remove("unit-sparkle");
+        void boardElement.offsetWidth;
+        boardElement.classList.add("unit-sparkle");
+        clearTimeout(sparkleTimeout);
+        sparkleTimeout = setTimeout(() => boardElement.classList.remove("unit-sparkle"), 900);
+      }
+    }
+
+    document.querySelector("#theme-toggle").addEventListener("click", event => {
+      const darkMode = document.body.classList.toggle("dark-mode");
+      event.currentTarget.setAttribute("aria-pressed", String(darkMode));
+      event.currentTarget.setAttribute("aria-label", darkMode ? "Switch to light mode" : "Switch to dark mode");
+      event.currentTarget.textContent = darkMode ? "☀️ Day ice" : "🌙 Night ice";
+    });
+    const muteButton = document.querySelector("#mute-toggle");
+    function updateMuteButton() {
+      const muted = localStorage.getItem("sudokool-muted") === "true";
+      muteButton.textContent = muted ? "🔇" : "🔊";
+      muteButton.setAttribute("aria-pressed", String(muted));
+      muteButton.setAttribute("aria-label", muted ? "Unmute win sound" : "Mute win sound");
+      muteButton.title = muted ? "Unmute win sound" : "Mute win sound";
+    }
+    muteButton.addEventListener("click", () => {
+      const muted = localStorage.getItem("sudokool-muted") !== "true";
+      localStorage.setItem("sudokool-muted", String(muted));
+      updateMuteButton();
+      if (muted) stopWindSound();
+    });
+    updateMuteButton();
+    document.querySelectorAll("[data-number]").forEach(button => button.addEventListener("click", () => enterNumber(Number(button.dataset.number))));
+    document.querySelector("#erase").addEventListener("click", () => enterNumber(0));
+    document.querySelector("#hint").addEventListener("click", useHint);
+    document.querySelector("#undo").addEventListener("click", undoMove);
+    document.querySelector("#new-game").addEventListener("click", () => makeNewPuzzle());
+    document.querySelectorAll("[data-difficulty]").forEach(button => button.addEventListener("click", () => {
+      const chosenDifficulty = button.dataset.difficulty;
+      if (chosenDifficulty === currentDifficulty) return;
+      currentDifficulty = chosenDifficulty; makeNewPuzzle(currentMode);
+    }));
+    regularModeButton.addEventListener("click", () => makeNewPuzzle("regular"));
+    core9ModeButton.addEventListener("click", () => { core9Modal.hidden = false; document.querySelector("#start-core9").focus(); });
+    document.querySelector("#start-core9").addEventListener("click", () => { core9Modal.hidden = true; makeNewPuzzle("core9"); });
+    document.querySelector("#cancel-core9").addEventListener("click", () => { core9Modal.hidden = true; regularModeButton.focus(); });
+    document.querySelector("#win-new-game").addEventListener("click", () => makeNewPuzzle(currentMode));
+    document.addEventListener("keydown", event => {
+      if (!core9Modal.hidden || !winModal.hidden) {
+        if (event.key === "Escape") {
+          if (!winModal.hidden) { winModal.hidden = true; stopWindSound(); }
+          core9Modal.hidden = true;
+        }
+        return;
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") { event.preventDefault(); undoMove(); }
+      else if (/^[1-9]$/.test(event.key)) enterNumber(Number(event.key));
+      else if (event.key === "Backspace" || event.key === "Delete") enterNumber(0);
+    });
+
+    startSnowfall();
+    makeNewPuzzle("regular");
+  </script>
+</body>
+</html>
