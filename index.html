@@ -5,56 +5,119 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>sudoKooL</title>
   <style>
+    :root {
+      color-scheme: light;
+      --page-bg: #eaf6fc;
+      --surface: #ffffff;
+      --surface-soft: #f5fbff;
+      --text: #102a43;
+      --muted: #526b80;
+      --accent: #00a6c7;
+      --accent-hover: #0087a5;
+      --accent-soft: #d7f5fb;
+      --related: #e8f6fb;
+      --given-bg: #e4edf3;
+      --grid-line: #9db7c7;
+      --grid-strong: #183b56;
+      --border: #bed3df;
+      --conflict-bg: #ffebe9;
+      --conflict-text: #b42318;
+      --shadow: 0 12px 34px rgb(34 82 110 / 12%);
+    }
+    body.dark-mode {
+      color-scheme: dark;
+      --page-bg: #101b2a;
+      --surface: #19283a;
+      --surface-soft: #203449;
+      --text: #e6f4fb;
+      --muted: #afc5d4;
+      --accent: #43d5ef;
+      --accent-hover: #7ce6f6;
+      --accent-soft: #24495a;
+      --related: #213b4d;
+      --given-bg: #29394a;
+      --grid-line: #526c7e;
+      --grid-strong: #b5d9e8;
+      --border: #496276;
+      --conflict-bg: #512e36;
+      --conflict-text: #ffb4aa;
+      --shadow: 0 12px 34px rgb(0 0 0 / 28%);
+    }
     * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #f3f5fb; color: #20243a; font-family: system-ui, sans-serif; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      padding: 24px; background: var(--page-bg); color: var(--text);
+      font-family: system-ui, sans-serif; transition: background-color 180ms ease, color 180ms ease;
+    }
     main { width: min(100%, 440px); text-align: center; }
-    h1 { margin-bottom: 8px; }
-    .instructions { margin-top: 0; color: #60677d; }
+    h1 { margin-bottom: 8px; color: var(--text); }
+    .title-accent { color: var(--accent); }
+    .instructions { margin-top: 0; color: var(--muted); }
     .difficulty-picker { margin: 14px 0; }
     .difficulty-picker strong { display: block; margin-bottom: 8px; }
     #difficulty-controls { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .difficulty-button.active, .mode-button.active { background: #dce5ff; border-color: #526de5; font-weight: 700; }
+    .difficulty-button.active, .mode-button.active {
+      background: var(--accent-soft); border-color: var(--accent); font-weight: 700;
+    }
     #mode-controls { display: flex; justify-content: center; gap: 8px; margin: 12px 0; }
-    #board { display: grid; grid-template-columns: repeat(9, 1fr); width: 100%; aspect-ratio: 1; margin: 20px auto; border: 3px solid #252b44; background: white; }
-    .cell { display: grid; place-items: center; min-width: 0; padding: 0; border: 0; border-right: 1px solid #b9bfd0; border-bottom: 1px solid #b9bfd0; border-radius: 0; background: white; color: #3348a5; font-size: clamp(16px, 5vw, 26px); cursor: pointer; }
-    .cell.box-right { border-right: 3px solid #252b44; }
-    .cell.box-bottom { border-bottom: 3px solid #252b44; }
-    .cell.given { background: #eef0f6; color: #20243a; font-weight: 700; }
-    .cell.related { background: #fff3cd; }
-    .cell.selected { background: #dce5ff; outline: 2px solid #526de5; outline-offset: -2px; }
-    .cell.given.selected { background: #dce5ff; }
-    .cell.conflict { color: #b42318; background: #ffebe9; }
-    .cell.core-center { box-shadow: inset 0 0 0 1px #a4afe0; }
-    .cell:focus-visible, button:focus-visible { outline: 3px solid #526de5; outline-offset: 2px; z-index: 1; }
-    button { min-height: 42px; border: 1px solid #ccd1df; border-radius: 8px; background: white; color: #20243a; font-size: 16px; cursor: pointer; padding: 8px 12px; }
-    button:hover:not(:disabled) { background: #e8edff; }
+    #board {
+      display: grid; grid-template-columns: repeat(9, 1fr); width: 100%; aspect-ratio: 1;
+      margin: 20px auto; border: 3px solid var(--grid-strong); background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .cell {
+      display: grid; place-items: center; min-width: 0; padding: 0; border: 0;
+      border-right: 1px solid var(--grid-line); border-bottom: 1px solid var(--grid-line);
+      border-radius: 0; background: var(--surface); color: var(--accent);
+      font-size: clamp(16px, 5vw, 26px); cursor: pointer;
+      transition: background-color 140ms ease, color 140ms ease;
+    }
+    .cell.box-right { border-right: 4px solid var(--grid-strong); }
+    .cell.box-bottom { border-bottom: 4px solid var(--grid-strong); }
+    .cell.given { background: var(--given-bg); color: var(--text); font-weight: 800; }
+    .cell.related { background: var(--related); }
+    .cell.selected { background: var(--accent-soft); outline: 2px solid var(--accent); outline-offset: -2px; }
+    .cell.given.selected { background: var(--accent-soft); color: var(--text); }
+    .cell.conflict { color: var(--conflict-text); background: var(--conflict-bg); }
+    .cell.core-center { box-shadow: inset 0 0 0 1px var(--accent); }
+    .cell:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; z-index: 1; }
+    button {
+      min-height: 42px; border: 1px solid var(--border); border-radius: 9px;
+      background: var(--surface); color: var(--text); font-size: 16px; cursor: pointer; padding: 8px 12px;
+      transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+    }
+    button:hover:not(:disabled) {
+      background: var(--accent-soft); border-color: var(--accent); transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgb(0 166 199 / 12%);
+    }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     .controls { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
     .controls button { min-width: 0; padding: 6px; font-size: 17px; }
     .action-controls { grid-template-columns: repeat(3, 1fr); margin-top: 8px; }
-    #status { display: flex; justify-content: center; gap: 18px; margin: 10px 0 0; color: #4a5269; }
+    #status { display: flex; justify-content: center; gap: 18px; margin: 10px 0 0; color: var(--muted); }
     #timer { font-variant-numeric: tabular-nums; }
-    #message { min-height: 1.5em; margin-top: 12px; color: #4a5269; }
-    .modal-backdrop { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; padding: 20px; background: rgb(25 31 52 / 55%); }
+    #message { min-height: 1.5em; margin-top: 12px; color: var(--muted); }
+    .modal-backdrop { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; padding: 20px; background: rgb(8 28 45 / 62%); }
     .modal-backdrop[hidden] { display: none; }
-    .modal { width: min(100%, 420px); padding: 24px; border-radius: 16px; background: white; box-shadow: 0 16px 48px rgb(0 0 0 / 22%); text-align: left; }
+    .modal { width: min(100%, 420px); padding: 24px; border-radius: 16px; background: var(--surface); color: var(--text); box-shadow: var(--shadow); text-align: left; }
     .modal h2 { margin-top: 0; text-align: center; }
     .modal li { margin: 10px 0; }
     .modal-actions { display: grid; gap: 8px; margin-top: 20px; }
-    .modal-actions button:first-child { background: #526de5; color: white; border-color: #526de5; }
+    .modal-actions button:first-child { background: var(--accent); color: #062b3b; border-color: var(--accent); font-weight: 700; }
     #win-quote { text-align: center; }
     #confetti-container { position: fixed; inset: 0; z-index: 20; overflow: hidden; pointer-events: none; }
     .confetti-piece { position: absolute; top: -20px; width: 10px; height: 15px; opacity: 0; animation: confetti-fall 3.2s ease-in forwards; }
     @keyframes confetti-fall { 0% { transform: translate3d(0, -10px, 0) rotate(0deg); opacity: 1; } 100% { transform: translate3d(var(--drift), 105vh, 0) rotate(var(--spin)); opacity: 0.9; } }
-    @media (prefers-reduced-motion: reduce) { .confetti-piece { animation-duration: 1ms; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; } .confetti-piece { animation-duration: 1ms; } }
     @media (max-width: 380px) { body { padding: 12px; } .controls button { font-size: 15px; } #status { gap: 10px; font-size: 14px; } }
   </style>
 </head>
 <body>
   <div id="confetti-container" aria-hidden="true"></div>
   <main>
-    <h1>sudoKooL</h1>
+    <h1>sudo<span class="title-accent">KooL</span></h1>
     <p class="instructions" id="mode-instructions">Fill each row, column, and 3×3 box with the numbers 1–9.</p>
+    <button type="button" id="theme-toggle" aria-pressed="false" aria-label="Switch to dark mode">🌙 Dark mode</button>
     <section class="difficulty-picker" aria-label="Choose puzzle difficulty">
       <strong>Difficulty</strong>
       <div id="difficulty-controls">
@@ -331,6 +394,12 @@
       showWinPopup();
     }
 
+    document.querySelector("#theme-toggle").addEventListener("click", event => {
+      const darkMode = document.body.classList.toggle("dark-mode");
+      event.currentTarget.setAttribute("aria-pressed", String(darkMode));
+      event.currentTarget.setAttribute("aria-label", darkMode ? "Switch to light mode" : "Switch to dark mode");
+      event.currentTarget.textContent = darkMode ? "☀️ Light mode" : "🌙 Dark mode";
+    });
     document.querySelectorAll("[data-number]").forEach(button => button.addEventListener("click", () => enterNumber(Number(button.dataset.number))));
     document.querySelector("#erase").addEventListener("click", () => enterNumber(0));
     document.querySelector("#hint").addEventListener("click", useHint);
